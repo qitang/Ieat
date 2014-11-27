@@ -65,7 +65,6 @@ module.exports = function(passport){
                 }
                 // save the user
                 newUser.save(function(err) {
-                    console.log('saving new user right now',newUser)
                     if (err)
                         throw err;
                     return done(null, newUser);
