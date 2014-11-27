@@ -23,6 +23,15 @@ app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: false }));
 app.use(cookieParser());
 app.use(express.static(path.join(__dirname, 'public')));
+var flash    = require('connect-flash');
+var passport = require('passport');
+require('./auth/passport')(passport)
+var expressSession = require('express-session');
+app.use(expressSession({secret: 'qitangisawesome'}));
+app.use(passport.initialize());
+app.use(passport.session());
+app.use(flash()); 
+
 
 app.use('/', routes);
 app.use('/users', users);

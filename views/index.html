@@ -28,6 +28,7 @@
      		<th>RATING</th>
      		<th>REVIEW COUNT</th>
      		<th>DISTANCE</th>
+        <th>PRICE</th>
      	</tr>
      </thead>
      <tbody>
@@ -37,7 +38,7 @@
      			<th>{{d.name}}</th>
      			<th>
                     <ul class="list-unstyled">
-                      
+
                       {% for cui in d.categories%}
                         <li><a href="#">{{ cui[1]}}</a></li>
                       {%endfor%}
@@ -46,10 +47,11 @@
      			<th>{{d.rating}}</th>
      			<th>{{d.review_count}}</th>
      			<th>{{d.distance}}</th>
+          <th>{{d.price}}</th>
      		</tr>
      	{% endfor %}
      </tbody>
-    </table> 
+    </table>
     <!-- jQuery (necessary for Bootstrap's JavaScript plugins) -->
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.1/jquery.min.js"></script>
     <!-- Include all compiled plugins (below), or include individual files as needed -->
