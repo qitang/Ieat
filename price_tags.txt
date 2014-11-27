@@ -446,3 +446,4 @@ seven-bistro-new-york:$$
 statler-grill-new-york:$$$
 stout-nyc-new-york:$$
 caribbean-kitchen-new-york:$
+the-garden-cafe-new-york-2:$

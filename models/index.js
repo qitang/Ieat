@@ -1,7 +1,7 @@
 var mongoose = require('mongoose');
 var bcrypt = require('bcrypt-nodejs');
-
-mongoose.connect('mongodb://heroku_app31997271:7fhar9roop1b3b6pofksour5qi@ds053310.mongolab.com:53310/heroku_app31997271/Ieat');
+mongoose.connect('mongodb://localhost/wikistack');
+//mongoose.connect('mongodb://heroku_app31997271:7fhar9roop1b3b6pofksour5qi@ds053310.mongolab.com:53310/heroku_app31997271/Ieat');
 var db = mongoose.connection;
 db.on('error', console.error.bind(console, 'connection error:'));
 
@@ -18,7 +18,15 @@ var userSchema = new Schema({
    address:String,
    title:String,
    ave_price: Number,
-   cuisine_count:[Number]
+   cuisine_count:[Number],
+   history:[{
+    id:String,
+    price: Number,
+    name:String,
+    review_count: Number,
+    distance:Number,
+    rating:Number
+   }]
 });
 
 //methods =====

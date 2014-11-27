@@ -97,13 +97,16 @@ function cal(rest,preference,comment_avg,price_avg,price) {
     res.render('home', { message: req.flash('message') });
   });
 
-  /* Handle Login POST */
-  router.post('/login', passport.authenticate('local-login', {
-    failureRedirect: '/',
-    failureFlash : true
-  }) ,function(req,res){
-      res.redirect("/home/" + req.body.latitude + "/" + req.body.longitude);
-  });
+  // /* Handle Login POST */
+  // router.post('/login', passport.authenticate('local-login', {
+  //   failureRedirect: '/',
+  //   failureFlash : true
+  // }) ,function(req,res){
+  //     res.redirect("/home/" + req.body.latitude + "/" + req.body.longitude);
+  // });
+router.post('/login',function(req,res){
+  res.redirect("/home/" + req.body.latitude + "/" + req.body.longitude);
+})
 
   /* GET Registration Page */
   router.get('/signup', function(req, res){
@@ -122,15 +125,44 @@ router.get('/signout', function(req, res) {
     failureFlash : true
   }));
 
-
+  router.post('/selectRestaurant',function(req,res) {
+     User.findOne({username:req.body.username},function(err, user){
+        if(user === null) {
+           var user   = new User();
+           user.username    = req.body.username;
+           for(var i =0 ;i <119 ; i++) {
+             user.cuisine_count.push(0);
+           }
+        }
+        var restID =  req.body.rest.id;
+        user.cuisine_count[dic[id]] += user.cuisine_count[dic[id]];
+        var h = {};
+        h.name = req.body.rest.name;
+        h.id = req.body.rest.id;
+        h.review_count = req.body.rest.review_count;
+        h.rating = req.body.rest.rating;
+        h.distance = req.body.rest.distance;
+        user.save(function(err) {
+          if (err) res.send("error!");
+          res.send("got you!");
+        });
+     })
+  });
 
 
 
 
 
 /* GET home page. */
-router.get('/home/:lati/:long', function(req, res) {
-User.findOne({username:req.user.username},function(err,user){
+router.post('/search', function(req, res) {
+User.findOne({username:req.body.username},function(err,user){
+  if(user === null) {
+     var user   = new User();
+     user.username    = req.body.username;
+     for(var i =0 ;i <119 ; i++) {
+        user.cuisine_count.push(0);
+     }
+  }
   var sum = [];
   for(var i in data.dic) {
     sum.push(0);
@@ -162,14 +194,14 @@ User.findOne({username:req.user.username},function(err,user){
   var second;
   async.parallel([
      function(callback){
-        yelp.search({category_filter:"restaurants",sort:"2",ll:req.params.lati+","+req.params.long,radius_filter :"500",limit:'20',offset:'0'}, function(err,d){
+        yelp.search({category_filter:"restaurants",sort:"2",ll:req.body.latitude+","+req.body.longitude,radius_filter :"500",limit:'20',offset:'0'}, function(err,d){
           first = d.businesses;
 
           callback(null);
         });
       },
       function(callback){
-        yelp.search({category_filter:"restaurants",sort:"2",ll:req.params.lati+","+req.params.long,radius_filter :"500",limit:'20',offset:'20'}, function(err,d){
+        yelp.search({category_filter:"restaurants",sort:"2",ll:req.body.latitude+","+req.body.longitude,radius_filter :"500",limit:'20',offset:'20'}, function(err,d){
            second = d.businesses;
           callback(null);
         });
@@ -216,7 +248,8 @@ User.findOne({username:req.user.username},function(err,user){
                 var score = cal(rest,preference,comments/temp.length,prices/count,price);
                 return 0-score;
             });
-           res.render("index",{bu:sorted_result});
+           //res.render("index",{bu:sorted_result});
+           res.send(sorted_result)
         })
     });
 });
