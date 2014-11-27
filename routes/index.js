@@ -81,11 +81,10 @@ function cal(rest,preference,comment_avg,price_avg,price) {
   var cuisine_score = ( max_cuisine_score + 0.5) * base.cuisine;
   var distance_score = (Math.exp(1-rest.distance/400))* base.distance/2.718
   var comment_score = (rest.review_count > comment_avg ? Math.log(rest.review_count) / Math.log(comment_avg) : rest.review_count/rest.review_count) * base["comments"];
-  if(price[rest.id] !== 'undefined') {
-    price_score = price[rest.id] < price_avg ? base.price : base.price/(1 + (price[rest.id] - price_avg) * 2 );
-
-  } else {
+  if(typeof price[rest.id] === 'undefined') {
     price_score = 10;
+  } else {
+    price_score = price[rest.id] < price_avg ? base.price : base.price/(1 + (price[rest.id] - price_avg) * 2 );
   }
   return rating_score + cuisine_score + distance_score + comment_score + price_score;
 
@@ -125,7 +124,7 @@ router.get('/signout', function(req, res) {
     failureFlash : true
   }));
 
-  router.post('/selectRestaurant',function(req,res) {
+  router.post('/select',function(req,res) {
      User.findOne({username:req.body.username},function(err, user){
         if(user === null) {
            var user   = new User();
