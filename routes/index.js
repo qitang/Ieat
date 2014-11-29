@@ -85,8 +85,15 @@ function cal(rest,preference,comment_avg,price_avg,price) {
   } else {
     price_score = price[rest.id] < price_avg ? base.price : base.price/(1 + (price[rest.id] - price_avg) * 2 );
   }
-  return rating_score + cuisine_score + distance_score + comment_score + price_score;
-
+   var total_score =  rating_score + cuisine_score + distance_score + comment_score + price_score;
+  return {
+    rating_score : rating_score,
+    cuisine_score : cuisine_score,
+    distance_score : distance_score,
+    comment_score : comment_score,
+    price_score : price_score,
+    total_score: total_score
+  };
 }
 
 /* GET login page. */
@@ -246,8 +253,7 @@ User.findOne({username:req.body.username},function(err,user){
                 d.score = cal(d,preference,comments/temp.length,prices/count,price);
               });
               var sorted_result = _.sortBy(temp,function(rest){
-                console.log(rest.score)
-                return 0-rest.score;
+                return 0-rest.total_score;
               });
             //   var sorted_result = _.sortBy(temp,function(rest){
             //     var score = cal(rest,preference,comments/temp.length,prices/count,price);
