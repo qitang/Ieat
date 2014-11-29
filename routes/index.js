@@ -60,7 +60,6 @@ function cal(rest,preference,comment_avg,price_avg,price) {
       comments:0,
       distance:0,
   }
-
   var base = {
     rating:30,
     cuisine:30,
@@ -243,10 +242,18 @@ User.findOne({username:req.body.username},function(err,user){
                 }
               })
               stream.end();
+              temp.forEach(function(d){
+                d.score = cal(d,preference,comments/temp.length,prices/count,price);
+              });
               var sorted_result = _.sortBy(temp,function(rest){
-                var score = cal(rest,preference,comments/temp.length,prices/count,price);
-                return 0-score;
-            });
+                console.log(rest.score)
+                return 0-rest.score;
+              });
+            //   var sorted_result = _.sortBy(temp,function(rest){
+            //     var score = cal(rest,preference,comments/temp.length,prices/count,price);
+            //     rest.score = socre;
+            //     return 0-score;
+            // });
            //res.render("index",{bu:sorted_result});
            res.send(sorted_result)
         })
