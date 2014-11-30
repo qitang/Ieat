@@ -79,7 +79,7 @@ function cal(rest,preference,comment_avg,price_avg,price) {
   var price_socre;
   var cuisine_score = ( max_cuisine_score + 0.5) * base.cuisine;
   var distance_score = (Math.exp(1-rest.distance/400))* base.distance/2.718
-  var comment_score = (rest.review_count > comment_avg ? Math.log(rest.review_count) / Math.log(comment_avg) : rest.review_count/rest.review_count) * base["comments"];
+  var comment_score = (rest.review_count > comment_avg ? Math.log(rest.review_count) / Math.log(comment_avg) : rest.review_count/comment_avg) * base["comments"];
   if(typeof price[rest.id] === 'undefined') {
     price_score = 10;
   } else {
@@ -253,7 +253,7 @@ User.findOne({username:req.body.username},function(err,user){
                 d.score = cal(d,preference,comments/temp.length,prices/count,price);
               });
               var sorted_result = _.sortBy(temp,function(rest){
-                return 0-rest.total_score;
+                return 0-rest.score.total_score;
               });
             //   var sorted_result = _.sortBy(temp,function(rest){
             //     var score = cal(rest,preference,comments/temp.length,prices/count,price);
