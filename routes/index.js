@@ -81,7 +81,8 @@ function cal(rest,preference,comment_avg,price_avg,price) {
   var distance_score = (Math.exp(1-rest.distance/400))* base.distance/2.718
   var comment_score = (rest.review_count > comment_avg ? Math.log(rest.review_count) / Math.log(comment_avg) : rest.review_count/comment_avg) * base["comments"];
   if(typeof price[rest.id] === 'undefined') {
-    price_score = 10;
+    //price_score = 10;
+    price_score = 2.5 < price_avg ? base.price : base.price/(1 + (2.5 - price_avg) * 2 );
   } else {
     price_score = price[rest.id] < price_avg ? base.price : base.price/(1 + (price[rest.id] - price_avg) * 2 );
   }
