@@ -54,7 +54,7 @@ var yelp = require("yelp").createClient({
   token_secret: "OEdg-WFJpQRSzplKEtT1RH-3UP4"
 });
 
-function cal(rest,preference,comment_avg,price_avg,price) {
+function cal(rest,preference,comment_avg,price_avg) {
   var average = {
       rating:0,
       comments:0,
@@ -80,13 +80,10 @@ function cal(rest,preference,comment_avg,price_avg,price) {
   var cuisine_score = ( max_cuisine_score + 0.5) * base.cuisine;
   var distance_score = (Math.exp(1-rest.distance/400))* base.distance/2.718
   var comment_score = (rest.review_count > comment_avg ? Math.log(rest.review_count) / Math.log(comment_avg) : rest.review_count/comment_avg) * base["comments"];
-  if(typeof price[rest.id] === 'undefined') {
-    //price_score = 10;
-    price_score = 2.5 < price_avg ? base.price : base.price/(1 + (2.5 - price_avg) * 2 );
-  } else {
-    price_score = price[rest.id] < price_avg ? base.price : base.price/(1 + (price[rest.id] - price_avg) * 2 );
-  }
-   var total_score =  rating_score + cuisine_score + distance_score + comment_score + price_score;
+
+  price_score = rest.price < price_avg ? base.price : base.price/(1 + (rest.price - price_avg) * 2 );
+
+  var total_score =  rating_score + cuisine_score + distance_score + comment_score + price_score;
   return {
     rating_score : rating_score,
     cuisine_score : cuisine_score,
@@ -97,6 +94,51 @@ function cal(rest,preference,comment_avg,price_avg,price) {
   };
 }
 
+
+function processResult(rests,cb) {
+  var obj = {
+       comments : 0,
+        prices : 0 
+  }
+  
+  async,each(rests,function(r,callback){
+    obj.comments += r.review_count;
+    Restaurant.findOne({id:r.id},function(err,doc){
+        if(doc ===null) {
+            request({
+               url: "http://www.yelp.com/biz/" + r.id,
+               json: true
+            }, function (error, response, body) {
+              if (!error && response.statusCode === 200) {
+                  var $ = cheerio.load("<div>" + body.search_results + "</div>");
+                  $('div.search-result').each(function(index, a) {
+                    if($(this).find('span.price-range').text() !== "") {
+                       r.price = $(this).find('span.price-range').text().trim().length;
+                       obj.prices += r.price;
+                    }
+                     else {
+                      r.price = 2.5;
+                      obj.prices += 2.5;
+                    }
+                  });
+              }
+              /*
+                put in the code to get img url and assign it to r
+
+              */
+              doc.save(function(err){
+                callback();
+              });
+            })
+        } else {
+          r.price = doc.price;
+          obj.prices += r.price;
+          r.img_url = doc.img_url;
+          callback();
+        }
+    })
+  },cb(rests,obj));
+}
 /* GET login page. */
   router.get('/', function(req, res) {
     // Display the Login page with any flash message, if any
@@ -161,112 +203,69 @@ router.get('/signout', function(req, res) {
 
 /* GET home page. */
 router.post('/search', function(req, res) {
-User.findOne({username:req.body.username},function(err,user){
-  if(user === null) {
-     var user   = new User();
-     user.username    = req.body.username;
-     for(var i =0 ;i <119 ; i++) {
-        user.cuisine_count.push(0);
-     }
-  }
-  var sum = [];
-  for(var i in data.dic) {
-    sum.push(0);
-  }
-  for(var i in user.cuisine_count) {
-      for(var j in data.map[i]) {
-        sum[j] += user.cuisine_count[i] * parseFloat(data.map[i][j]) / 100.0;
-      }
-  }
-
-  var total = 0;
-  sum.forEach(function(d){
-    total += d;
-  });
-
-  //if total is 0, do not normalize it
-  if( parseInt(total) !== 0) {
-   sum = sum.map(function(d){
-      return d/total;
-    });
-  }
-  var preference = [];
-  for(var i in sum) {
-    preference.push(sum[i]);
-  }
-
-  var price = require('../data/loadData.js').getPrices('./price_tags.txt');
-  var first;
-  var second;
-  async.parallel([
-     function(callback){
-        yelp.search({category_filter:"restaurants",sort:"2",ll:req.body.latitude+","+req.body.longitude,radius_filter :"500",limit:'20',offset:'0'}, function(err,d){
-          first = d.businesses;
-
-          callback(null);
-        });
-      },
-      function(callback){
-        yelp.search({category_filter:"restaurants",sort:"2",ll:req.body.latitude+","+req.body.longitude,radius_filter :"500",limit:'20',offset:'20'}, function(err,d){
-           second = d.businesses;
-          callback(null);
-        });
-      }
-    ],function(err){
-      var comments = 0;
-      var prices = 0;
-      var count = 0;
-      var temp = _.union(first,second);
-      var rest_to_crawl = [];
-      temp.forEach(function(item){
-        if(typeof price[item.id] === 'undefined') {
-          rest_to_crawl.push(item.id);
+  User.findOne({username:req.body.username},function(err,user){
+    if(user === null) {
+       var user   = new User();
+       user.username    = req.body.username;
+       for(var i =0 ;i <119 ; i++) {
+          user.cuisine_count.push(0);
+       }
+    }
+    var sum = [];
+    for(var i in data.dic) {
+      sum.push(0);
+    }
+    for(var i in user.cuisine_count) {
+        for(var j in data.map[i]) {
+          sum[j] += user.cuisine_count[i] * parseFloat(data.map[i][j]) / 100.0;
         }
-      });
-      var stream = fs.createWriteStream("price_tags.txt",{'flags': 'a'});
-      async.each(rest_to_crawl,function(id,callback){
-        request({
-             url: "http://www.yelp.com/biz/" + id,
-             json: true
-          }, function (error, response, body) {
-            if (!error && response.statusCode === 200) {
-                var $ = cheerio.load("<div>" + body + "</div>");
-                $('.biz-main-info span.price-range').each(function(index, a) {
-                  if($(this).text() !== "") {
-                    price[id] = ($(this).text().trim().length);
-                    stream.write(id + ":" + $(this).text() + "\r\n");
-                  }
-                });
-            }
-            callback();
-          })
-        },function(err){
-              temp.forEach(function(item){
-                comments += item.review_count;
-                if(typeof price[item.id] !== 'undefined') {
-                  count++;
-                  item.price = price[item.id];
-                  prices += price[item.id];
-                }
-              })
-              stream.end();
-              temp.forEach(function(d){
-                d.score = cal(d,preference,comments/temp.length,prices/count,price);
-              });
-              var sorted_result = _.sortBy(temp,function(rest){
-                return 0-rest.score.total_score;
-              });
-            //   var sorted_result = _.sortBy(temp,function(rest){
-            //     var score = cal(rest,preference,comments/temp.length,prices/count,price);
-            //     rest.score = socre;
-            //     return 0-score;
-            // });
-           //res.render("index",{bu:sorted_result});
-           res.send(sorted_result)
-        })
-    });
-});
+    }
 
+    var total = 0;
+    sum.forEach(function(d){
+      total += d;
+    });
+
+    //if total is 0, do not normalize it
+    if( parseInt(total) !== 0) {
+     sum = sum.map(function(d){
+        return d/total;
+      });
+    }
+    var preference = [];
+    for(var i in sum) {
+      preference.push(sum[i]);
+    }
+
+    var first;
+    var second;
+    async.parallel([
+       function(callback){
+          yelp.search({category_filter:"restaurants",sort:"2",ll:req.body.latitude+","+req.body.longitude,radius_filter :"500",limit:'20',offset:'0'}, function(err,d){
+            first = d.businesses;
+
+            callback(null);
+          });
+        },
+        function(callback){
+          yelp.search({category_filter:"restaurants",sort:"2",ll:req.body.latitude+","+req.body.longitude,radius_filter :"500",limit:'20',offset:'20'}, function(err,d){
+             second = d.businesses;
+            callback(null);
+          });
+        }
+      ],function(err){
+        var temp = _.union(first,second);
+        processResult(temp,function(rests,total){
+          rests.forEach(function(d){
+              d.score = cal(d,preference,total.comments/temp.length,total.prices/temp.length);
+          });
+          var sorted_result = _.sortBy(temp,function(rest){
+              return 0-rest.score.total_score;
+          });
+          res.send(sorted_result);
+        })
+      });
+  });
   //"40.636385,-74.017424"
 });
 
