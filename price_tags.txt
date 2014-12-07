@@ -100,8 +100,7 @@ bea-new-york:$$
 the-good-fork-brooklyn:$$$
 sushi-yasuda-new-york:$$$$
 pio-pio-new-york-7:$$
-barboncino-brooklyn:$$
-club-a-steakhouse-new-york:$$$
+barboncino-brooklyn:$$club-a-steakhouse-new-york:$$$
 caracas-arepa-bar-new-york:$$
 post-office-brooklyn-6:$$
 mamouns-falafel-new-york-2:$

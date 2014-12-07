@@ -18,7 +18,7 @@ var getCorrelation = function(path) {
 
 var getPrices = function(path) {
 	var contents = fs.readFileSync(path,'utf-8');
-    var lines = contents.split('\r\n');
+    var lines = contents.match(/[^\r\n]+/g);
     var prices = {};
     for(var i =0 ; i <lines.length ; i++) {
     	var split = lines[i].split(':');

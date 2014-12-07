@@ -5,10 +5,14 @@ mongoose.connect('mongodb://heroku_app31997271:7fhar9roop1b3b6pofksour5qi@ds0533
 var db = mongoose.connection;
 db.on('error', console.error.bind(console, 'connection error:'));
 
-var User;
+var User,Restaurant;
 var Schema = mongoose.Schema;
 
-
+var restaurantSchema = new Schema({
+  id:String,
+  price:Number,
+  img_url:String
+});
 
 var userSchema = new Schema({
    username : String,
@@ -43,6 +47,7 @@ userSchema.methods.validPassword = function(password){
 
 
 User = mongoose.model('User', userSchema);
+Restaurant = mongoose.model('Restaurant',restaurantSchema);
 
-module.exports = {"User": User};
+module.exports = {"User": User, "Restaurant": Restaurant};
 
