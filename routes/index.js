@@ -55,14 +55,14 @@ var Restaurant = models.Restaurant;
 //   var rest = {};
 //   rest.id = k;
 //   rest.price = js[k].price;
-//   rest.img_url = js[k].img_url;
+//   rest.food_image_url = js[k].food_image_url.replace(/ls(?=.jpg)/,"o");
 //   a.push(rest)
 // }
 // async.each(a, function(single, callback){
 //     var r = new Restaurant();
 //     r.id = single.id;
 //     r.price = single.price;
-//     r.img_url = single.img_url;
+//     r.food_image_url = single.food_image_url;
 //     r.save(function(err){
 //       callback();
 //     });
@@ -71,7 +71,6 @@ var Restaurant = models.Restaurant;
 //   if(err) console.log(err)
 //   console.log("done")
 //  });
-
 
 // var map = require('../data/loadData.js').getPrices('./price_tags.txt');
 // var ar =[];
@@ -143,8 +142,8 @@ function processResult(rests,cb) {
             }, function (error, response, body) {
               if (!error && response.statusCode === 200) {
                   var $ = cheerio.load( body);
-                  r.img_url = $("div.showcase-photo-box img.photo-box-img[height='250']").first().attr("src");
-                  doc.img_url = r.img_url;
+                  r.food_image_url = $("div.showcase-photo-box img.photo-box-img[height='250']").first().attr("src").replace(/ls(?=.jpg)/,"o");
+                  doc.food_image_url = r.food_image_url;
                   var p = $('div.price-category span.price-range').text();
                   if(p) {
                     r.price = p.trim().length;
@@ -175,7 +174,7 @@ function processResult(rests,cb) {
         } else {
           r.price = doc.price;
           obj.prices += r.price;
-          r.img_url = doc.img_url;
+          r.food_image_url = doc.food_image_url;
           callback();
         }
     })

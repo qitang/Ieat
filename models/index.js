@@ -11,7 +11,7 @@ var Schema = mongoose.Schema;
 var restaurantSchema = new Schema({
   id:String,
   price:Number,
-  img_url:String
+  food_image_url:String
 });
 
 var userSchema = new Schema({
