@@ -22,14 +22,9 @@ var userSchema = new Schema({
    address:String,
    title:String,
    ave_price: Number,
-   cuisine_count:[Number],
    history:[{
     id:String,
-    price: Number,
-    name:String,
-    review_count: Number,
-    distance:Number,
-    rating:Number
+    categories: [String]
    }]
 });
 

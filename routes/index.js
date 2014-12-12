@@ -204,7 +204,7 @@ function cal(rest,preference,comment_avg,price_avg,price) {
     price:10
   }
   var rating_score = (rest.rating - 2) * base.rating /3;
-  var max_cuisine_score = 0;
+  var max_cuisine_score = Number.NEGATIVE_INFINITY;
   var price_score;
   for(var iter in rest.categories) {
     if(typeof data.dic[rest.categories[iter][0].replace(/\s/g,"_")] === 'undefined') {
@@ -264,21 +264,26 @@ router.get('/signout', function(req, res) {
 
   router.post('/select',function(req,res) {
      User.findOne({username:req.body.username},function(err, user){
+      var rest = req.body.restaurant;
+      console.log(req.body)
         if(user === null) {
            var user   = new User();
            user.username    = req.body.username;
-           for(var i =0 ;i <119 ; i++) {
-             user.cuisine_count.push(0);
-           }
+          
         }
-        var restID =  req.body.rest.id;
-        user.cuisine_count[dic[id]] += user.cuisine_count[dic[id]];
-        var h = {};
-        h.name = req.body.rest.name;
-        h.id = req.body.rest.id;
-        h.review_count = req.body.rest.review_count;
-        h.rating = req.body.rest.rating;
-        h.distance = req.body.rest.distance;
+        var temp = [];
+
+        for(var iter in rest.categories) {
+
+          if(typeof data.dic[rest.categories[iter][0].replace(/\s/g,"_")] === 'undefined'){
+            continue;
+          }
+          temp.push(rest.categories[iter][0].replace(/\s/g,'_'));
+        }
+        user.history.push({
+          id:rest.id,
+          categories:temp
+        });
         user.save(function(err) {
           if (err) res.send("error!");
           res.send("got you!");
@@ -296,17 +301,24 @@ User.findOne({username:req.body.username},function(err,user){
   if(user === null) {
      var user   = new User();
      user.username    = req.body.username;
-     for(var i =0 ;i <119 ; i++) {
-        user.cuisine_count.push(0);
-     }
   }
   var sum = [];
+  var cuisine_count = [];
   for(var i in data.dic) {
+    cuisine_count.push(0);
     sum.push(0);
   }
-  for(var i in user.cuisine_count) {
+  
+  for(var rh = 0 ; rh < user.history.length ; rh++) {
+    var arr = user.history[rh].categories;
+    for(var c = 0 ;c <  arr.length ; c++) {
+      var index = data.dic[arr[c]];
+      cuisine_count[index] += 1;
+    }
+  }
+  for(var i in cuisine_count) {
       for(var j in data.map[i]) {
-        sum[j] += user.cuisine_count[i] * parseFloat(data.map[i][j]) / 100.0;
+        sum[j] += cuisine_count[i] * parseFloat(data.map[i][j]) / 100.0;
       }
   }
 
@@ -321,11 +333,12 @@ User.findOne({username:req.body.username},function(err,user){
       return d/total;
     });
   }
+  
   var preference = [];
   for(var i in sum) {
     preference.push(sum[i]);
   }
-
+  console.log(preference )
   var first;
   var second;
   async.parallel([
