@@ -265,7 +265,6 @@ router.get('/signout', function(req, res) {
   router.post('/select',function(req,res) {
      User.findOne({username:req.body.username},function(err, user){
       var rest = req.body.restaurant;
-      console.log(req.body)
         if(user === null) {
            var user   = new User();
            user.username    = req.body.username;
@@ -282,7 +281,8 @@ router.get('/signout', function(req, res) {
         }
         user.history.push({
           id:rest.id,
-          categories:temp
+          categories:temp,
+          like:req.body.like
         });
         user.save(function(err) {
           if (err) res.send("error!");
@@ -338,7 +338,6 @@ User.findOne({username:req.body.username},function(err,user){
   for(var i in sum) {
     preference.push(sum[i]);
   }
-  console.log(preference )
   var first;
   var second;
   async.parallel([

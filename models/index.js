@@ -24,7 +24,8 @@ var userSchema = new Schema({
    ave_price: Number,
    history:[{
     id:String,
-    categories: [String]
+    categories: [String],
+    like:Number
    }]
 });
 
