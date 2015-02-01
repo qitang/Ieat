@@ -1,6 +1,7 @@
 var mongoose = require('mongoose');
 var bcrypt = require('bcrypt-nodejs');
-mongoose.connect('mongodb://localhost/wikistack');
+ mongoose.connect('mongodb://localhost/wikistack');
+// mongoose.connect('mongodb://heroku_app31997271:7fhar9roop1b3b6pofksour5qi@ds053310.mongolab.com:53310/heroku_app31997271/Ieat');
 //mongoose.connect('mongodb://heroku_app31997271:7fhar9roop1b3b6pofksour5qi@ds053310.mongolab.com:53310/heroku_app31997271/Ieat');
 var db = mongoose.connection;
 db.on('error', console.error.bind(console, 'connection error:'));
@@ -11,7 +12,13 @@ var Schema = mongoose.Schema;
 var restaurantSchema = new Schema({
   id:String,
   price:Number,
-  food_image_url:String
+  food_image_url:[String],
+  good_for: String,
+  open:Boolean,
+  open_hours:[{
+    day : String,
+    hours : String
+  }]
 });
 
 var userSchema = new Schema({

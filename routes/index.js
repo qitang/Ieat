@@ -16,6 +16,7 @@ var Restaurant = models.Restaurant;
 
 
 
+
 /*
   crawl the restaurants price tags
 */
@@ -122,6 +123,51 @@ var Restaurant = models.Restaurant;
 //   stream.end();
 //   console.log("done!")
 // });
+
+//var query = Restaurant.find({"open_hours": {$exists: true}});
+query = Restaurant.find({});
+query.limit(1000);
+query.exec(function (err, docs) {
+  async.each(docs.filter(function(i){
+   //if(!i.open && !i.good_for) return true;
+    return true;
+  }), function(single, callback) {
+    request({
+      url: "http://www.yelp.com/biz/" + single.id,
+      json: true
+    },function(error, response, body){
+         console.log("start crawling " + single.id);
+        if (!error && response.statusCode === 200) {
+          console.log("get the html content status code is :  ", response.statusCode )
+          var $ = cheerio.load("<div>" + body + "</div>");
+          single.food_image_url = [];
+          $("div.showcase-photo-box img.photo-box-img[height='250']").each(function(i,e){
+            single.food_image_url.push($(this).attr("src").replace(/ls(?=.jpg)/,"o"));
+          });
+          $('table.hours-table tr').each(function(i,element){
+            var day = $(this).children('th').text().trim();
+            var hours = $(this).children('td').first().text().trim();
+            single.open_hours.push({
+              day : day,
+              hours : hours
+            });
+          });
+          //var open = $('span.hour-range').siblings().text().toLowerCase();
+          // var goodfor = $('div.short-def-list dl dt').filter(function(i,el){ return $(this).text().trim() === 'Good For'}).siblings().text().trim().toLowerCase();
+          // single.open = open.indexOf("open") !== -1;
+          // single.good_for = goodfor;
+          console.log(single.open_hours,'---------', single.food_image_url);
+          single.save(function(err){
+            console.log(single.id + "   saved!!")
+            callback();
+          });
+        }
+    })
+  } ,function(){
+      if(err) console.log(err)
+      console.log("done");
+  });
+});
 
 
 function processResult(rests,cb) {

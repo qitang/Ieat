@@ -16,6 +16,18 @@ var getCorrelation = function(path) {
     }
 }
 
+var getCateMap = function(path) {
+    var contents = fs.readFileSync(path,'utf-8');
+    var lines = contents.split('\r\n');
+    var map = {};
+    for(var i =0 ; i<lines.length ;i++) {
+        var split = lines[i].split(':');
+        if(split.length <=1) continue;
+        map[0] = split[1];
+    }
+    return map;
+}
+
 var getPrices = function(path) {
 	var contents = fs.readFileSync(path,'utf-8');
     var lines = contents.match(/[^\r\n]+/g);
@@ -38,3 +50,4 @@ var getPrices = function(path) {
 
 module.exports.getCorrelation = getCorrelation;
 module.exports.getPrices = getPrices;
+module.exports.getCateMap = getCateMap;
