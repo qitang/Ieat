@@ -20,6 +20,16 @@ Restaurant.findOne({id:'lucky-strike-new-york'},function(err,user){
    console.log("haha",user.isOpen());
 })
 
+// var contents = fs.readFileSync('./map.csv','utf-8');
+// var stream = fs.createWriteStream("map.txt");
+
+// contents.split('\n').forEach(function(line){
+//    var words = line.split(',');
+//     if(words[3]) {
+     
+//       stream.write(words[3] + ":" + words[4] + "\r\n");
+//     }
+// });
 /*
   crawl the restaurants price tags
 */
@@ -193,6 +203,7 @@ function processResult(rests,cb) {
                   var $ = cheerio.load( body);
                   // r.food_image_url = $("div.showcase-photo-box img.photo-box-img[height='250']").first().attr("src").replace(/ls(?=.jpg)/,"o");
                   r.food_image_url = [];
+                  r.open_hours = [];
                   $("div.showcase-photo-box img.photo-box-img[height='250']").each(function(i,e){
                     r.food_image_url.push($(this).attr("src").replace(/ls(?=.jpg)/,"o"));
                   });
