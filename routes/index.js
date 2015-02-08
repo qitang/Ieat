@@ -8,13 +8,15 @@ var fs = require('fs');
 var  _ = require("underscore");
 var data = require('../data/loadData.js').getCorrelation('./correlation.csv');
 var getCateMap = require('../data/loadData.js').getCateMap('./map.txt');
-
+var getTimeMap = require('../data/loadData.js').getTimeMap('./map_cuisine_time.csv');
 
 var request = require("request")
 var passport = require('passport');
 var models = require('../models/index');
 var User = models.User;
 var Restaurant = models.Restaurant;
+
+console.log(getTimeMap)
 
 // Restaurant.findOne({id:'lucky-strike-new-york'},function(err,user){
 //    console.log("haha",user.isOpen());
@@ -338,6 +340,9 @@ router.get('/signout', function(req, res) {
   router.post('/select',function(req,res) {
      User.findOne({username:req.body.username},function(err, user){
       var rest = req.body.restaurant;
+      if(! req.body.restaurant) {
+        res.send('restaurant undefined');
+      }
         if(user === null) {
            var user   = new User();
            user.username    = req.body.username;
