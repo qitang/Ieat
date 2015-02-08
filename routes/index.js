@@ -16,9 +16,9 @@ var models = require('../models/index');
 var User = models.User;
 var Restaurant = models.Restaurant;
 
-Restaurant.findOne({id:'lucky-strike-new-york'},function(err,user){
-   console.log("haha",user.isOpen());
-})
+// Restaurant.findOne({id:'lucky-strike-new-york'},function(err,user){
+//    console.log("haha",user.isOpen());
+// })
 
 // var contents = fs.readFileSync('./map.csv','utf-8');
 // var stream = fs.createWriteStream("map.txt");
