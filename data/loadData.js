@@ -23,7 +23,7 @@ var getCateMap = function(path) {
     for(var i =0 ; i<lines.length ;i++) {
         var split = lines[i].split(':');
         if(split.length <=1) continue;
-        map[0] = split[1];
+        map[split[0]] = split[1];
     }
     return map;
 }
