@@ -58,6 +58,7 @@ restaurantSchema.methods.isOpen = function() {
   for(var i =0 ; i< this.open_hours.length ; i++) {
     if( this.open_hours[i].day === today) {
       var hours = this.open_hours[i].hours.replace(/\n|\s/g,'').split('-');
+      if(hours.length < 2) return false;
       var left = moment(hours[0] , 'hmma');
       //if open hours to am, means untill tomorrow
       if(hours[1].indexOf('am') !== -1) return true;

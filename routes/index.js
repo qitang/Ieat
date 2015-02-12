@@ -9,14 +9,15 @@ var  _ = require("underscore");
 var data = require('../data/loadData.js').getCorrelation('./correlation.csv');
 var getCateMap = require('../data/loadData.js').getCateMap('./map.txt');
 var getTimeMap = require('../data/loadData.js').getTimeMap('./map_cuisine_time.csv');
+var time_zone = require('../data/loadData.js').time_zone;
 
 var request = require("request")
 var passport = require('passport');
 var models = require('../models/index');
 var User = models.User;
 var Restaurant = models.Restaurant;
+var moment = require('moment');
 
-console.log(getTimeMap)
 
 // Restaurant.findOne({id:'lucky-strike-new-york'},function(err,user){
 //    console.log("haha",user.isOpen());
@@ -168,9 +169,9 @@ console.log(getTimeMap)
 //             });
 //           });
 //           //var open = $('span.hour-range').siblings().text().toLowerCase();
-//           // var goodfor = $('div.short-def-list dl dt').filter(function(i,el){ return $(this).text().trim() === 'Good For'}).siblings().text().trim().toLowerCase();
+//           // var good_for = $('div.short-def-list dl dt').filter(function(i,el){ return $(this).text().trim() === 'Good For'}).siblings().text().trim().toLowerCase();
 //           // single.open = open.indexOf("open") !== -1;
-//           // single.good_for = goodfor;
+//           // single.good_for = good_for;
 //           console.log(single.open_hours,'---------', single.food_image_url);
 //           single.save(function(err){
 //             console.log(single.id + "   saved!!")
@@ -210,6 +211,9 @@ function processResult(rests,cb) {
                     r.food_image_url.push($(this).attr("src").replace(/ls(?=.jpg)/,"o"));
                   });
                   doc.food_image_url = r.food_image_url;
+                  r.good_for = $('div.short-def-list dl dt').filter(function(i,el){ return $(this).text().trim() === 'Good For'}).siblings().text().trim().toLowerCase();
+                  doc.good_for = r.good_for;
+
                   $('table.hours-table tr').each(function(i,element){
                     var day = $(this).children('th').text().trim();
                     var hours = $(this).children('td').first().text().trim();
@@ -229,6 +233,7 @@ function processResult(rests,cb) {
                     doc.price = 2.5;
                     obj.prices += 2.5;
                   }
+                  r.open = doc.isOpen();
                   // $('div.search-result').each(function(index, a) {
                   //   if($(this).find('span.price-range').text() !== "") {
                   //      r.price = $(this).find('span.price-range').text().trim().length;
@@ -247,9 +252,12 @@ function processResult(rests,cb) {
               });
             })
         } else {
+          r.open = doc.isOpen();
           r.price = doc.price;
           obj.prices += r.price;
           r.food_image_url = doc.food_image_url;
+          r.good_for = doc.good_for;
+          r.open_hours = doc.open_hours;
           callback();
         }
     })
@@ -276,29 +284,43 @@ function cal(rest,preference,comment_avg,price_avg,price) {
     cuisine:30,
     comments:10,
     distance:20,
-    price:10
+    price:10,
+    time:30
   }
+   
   var rating_score = (rest.rating - 2) * base.rating /3;
   var max_cuisine_score = Number.NEGATIVE_INFINITY;
+  var max_time_score = Number.NEGATIVE_INFINITY;
   var price_score;
   for(var iter in rest.categories) {
     if(typeof data.dic[getCateMap[rest.categories[iter][0].replace(/\s/g,"_")]] === 'undefined') {
        continue;
     }
     max_cuisine_score = Math.max(max_cuisine_score, preference[data.dic[getCateMap[rest.categories[iter][0].replace(/\s/g,"_")]]]);
+    max_time_score = Math.max(max_time_score, parseInt(getTimeMap[getCateMap[rest.categories[iter][0].replace(/\s/g,"_")]][time_zone[parseInt(moment().format('HH'))]].slice(0,-1)));
+    //console.log(getCateMap[rest.categories[iter][0].replace(/\s/g,"_")] , "----" , getTimeMap[getCateMap[rest.categories[iter][0].replace(/\s/g,"_")]][time_zone[parseInt(moment().format('HH'))]].slice(0,-1))
+   //console.log(time_zone[parseInt(moment().format('HH'))])
   }
+  max_time_score *=  1.0 * base.time/100;
+  if(rest.good_for) {
+    if(rest.good_for.replace(/\s+/,"").indexOf(time_zone[parseInt(moment().format('HH'))]) !== -1) {
+      max_time_score +=1;
+    }
+  }
+  var time_score = max_time_score;
   var price_socre;
   var cuisine_score = ( max_cuisine_score + 0.5) * base.cuisine;
   var distance_score = (Math.exp(1-rest.distance/400))* base.distance/2.718
   var comment_score = (rest.review_count > comment_avg ? Math.log(rest.review_count) / Math.log(comment_avg) : rest.review_count/comment_avg) * base["comments"];
   price_score = rest.price < price_avg ? base.price : base.price/(1 + (rest.price - price_avg) * 2 );
-  var total_score =  rating_score + cuisine_score + distance_score + comment_score + price_score;
+  var total_score =  rating_score + cuisine_score + distance_score + comment_score + price_score + time_score;
   return {
     rating_score : rating_score,
     cuisine_score : cuisine_score,
     distance_score : distance_score,
     comment_score : comment_score,
     price_score : price_score,
+    time_score : time_score,
     total_score: total_score
   };
 }
