@@ -363,7 +363,7 @@ router.get('/signout', function(req, res) {
      User.findOne({username:req.body.username},function(err, user){
       var rest = req.body.restaurant;
       if(! req.body.restaurant) {
-        res.send('restaurant undefined');
+        return res.send('restaurant undefined');
       }
         if(user === null) {
            var user   = new User();
@@ -386,7 +386,45 @@ router.get('/signout', function(req, res) {
         });
         user.save(function(err) {
           if (err) res.send(err);
-          res.send("ok");
+          else {
+            var sum = [];
+            var cuisine_count = [];
+            for(var i in data.dic) {
+              cuisine_count.push(0);
+              sum.push(0);
+            }
+            
+            for(var rh = 0 ; rh < user.history.length ; rh++) {
+              var arr = user.history[rh].categories;
+              for(var c = 0 ;c <  arr.length ; c++) {
+                var index = data.dic[arr[c]];
+                cuisine_count[index] += 1;
+              }
+            }
+            for(var i in cuisine_count) {
+                for(var j in data.map[i]) {
+                  console.log(data.map[i][j] , "+++" , parseFloat(data.map[i][j]))
+                  sum[j] += cuisine_count[i] * parseFloat(data.map[i][j]) / 100.0;
+                }
+            }
+
+            var total = 0;
+            sum.forEach(function(d){
+              total += d;
+            });
+
+            //if total is 0, do not normalize it
+            if( parseInt(total) !== 0) {
+             sum = sum.map(function(d){
+                return d/total;
+              });
+            }
+            var preference = [];
+            for(var i in sum) {
+              preference.push(sum[i]);
+            }
+            res.send(preference)
+          }
         });
      })
   });
@@ -423,6 +461,7 @@ User.findOne({username:req.body.username},function(err,user){
   }
   for(var i in cuisine_count) {
       for(var j in data.map[i]) {
+        console.log(data.map[i][j] , "+++" , parseFloat(data.map[i][j]))
         sum[j] += cuisine_count[i] * parseFloat(data.map[i][j]) / 100.0;
       }
   }
