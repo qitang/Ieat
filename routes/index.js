@@ -304,8 +304,11 @@ function cal(rest,preference,comment_avg,price_avg,price) {
   var max_cuisine_score = Number.NEGATIVE_INFINITY;
   var max_time_score = Number.NEGATIVE_INFINITY;
   var price_score;
+  var cuisine_score;
+  var time_score
   for(var iter in rest.categories) {
     if(typeof data.dic[getCateMap[rest.categories[iter][0].replace(/\s/g,"_")]] === 'undefined') {
+       max_time_score =  Math.max(max_time_score, parseInt(getTimeMap['Others'][time_zone[parseInt(moment().format('HH'))]].slice(0,-1)));
        continue;
     }
     max_cuisine_score = Math.max(max_cuisine_score, preference[data.dic[getCateMap[rest.categories[iter][0].replace(/\s/g,"_")]]]);
@@ -319,9 +322,14 @@ function cal(rest,preference,comment_avg,price_avg,price) {
       max_time_score +=1;
     }
   }
-  var time_score = max_time_score;
+  time_score = max_time_score;
+  if(isFinite(max_cuisine_score)) {
+    cuisine_score = ( max_cuisine_score + 0.5) * base.cuisine;
+  } else {
+    cuisine_score = 0;
+  }
+  
   var price_socre;
-  var cuisine_score = ( max_cuisine_score + 0.5) * base.cuisine;
   var distance_score = (Math.exp(1-rest.distance/400))* base.distance/2.718
   var comment_score = (rest.review_count > comment_avg ? Math.log(rest.review_count) / Math.log(comment_avg) : rest.review_count/comment_avg) * base["comments"];
   price_score = rest.price < price_avg ? base.price : base.price/(1 + (rest.price - price_avg) * 2 );
