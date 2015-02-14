@@ -1,8 +1,8 @@
 var mongoose = require('mongoose');
 var bcrypt = require('bcrypt-nodejs');
 var moment = require('moment');
- //mongoose.connect('mongodb://localhost/wikistack');
-mongoose.connect('mongodb://heroku_app31997271:7fhar9roop1b3b6pofksour5qi@ds053310.mongolab.com:53310/heroku_app31997271/Ieat');
+ mongoose.connect('mongodb://localhost/wikistack');
+//mongoose.connect('mongodb://heroku_app31997271:7fhar9roop1b3b6pofksour5qi@ds053310.mongolab.com:53310/heroku_app31997271/Ieat');
 //mongoose.connect('mongodb://heroku_app31997271:7fhar9roop1b3b6pofksour5qi@ds053310.mongolab.com:53310/heroku_app31997271/Ieat');
 var db = mongoose.connection;
 db.on('error', console.error.bind(console, 'connection error:'));
@@ -60,10 +60,10 @@ restaurantSchema.methods.isOpen = function() {
       var hours = this.open_hours[i].hours.replace(/\n|\s/g,'').split('-');
       if(hours.length < 2) return false;
       var left = moment(hours[0] , 'hmma');
-      //if open hours to am, means untill tomorrow
-      if(hours[1].indexOf('am') !== -1) return true;
       var right = moment(hours[1] , 'hmma');
       if(now.isBefore(left,'minute')) return false;
+      //if open hours to am, means untill tomorrow
+      if(hours[1].indexOf('am') !== -1) return true;
       if(now.isAfter(right, 'minute')) return false;
       return true;
     }

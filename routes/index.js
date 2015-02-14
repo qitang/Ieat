@@ -19,8 +19,8 @@ var Restaurant = models.Restaurant;
 var moment = require('moment');
 
 
-// Restaurant.findOne({id:'lucky-strike-new-york'},function(err,user){
-//    console.log("haha",user.isOpen());
+// Restaurant.findOne({id:'potbelly-sandwich-shop-new-york'},function(err,user){
+//    console.log("haha",user.isOpen(), user.open_hours);
 // })
 
 // var contents = fs.readFileSync('./map.csv','utf-8');
@@ -287,7 +287,19 @@ function cal(rest,preference,comment_avg,price_avg,price) {
     price:10,
     time:30
   }
-   
+  
+  if(!rest.open) {
+    return {
+      rating_score : 0,
+      cuisine_score : 0,
+      distance_score : 0,
+      comment_score : 0,
+      price_score : 0,
+      time_score : 0,
+      total_score: 0
+    }
+  }
+
   var rating_score = (rest.rating - 2) * base.rating /3;
   var max_cuisine_score = Number.NEGATIVE_INFINITY;
   var max_time_score = Number.NEGATIVE_INFINITY;
@@ -403,7 +415,6 @@ router.get('/signout', function(req, res) {
             }
             for(var i in cuisine_count) {
                 for(var j in data.map[i]) {
-                  console.log(data.map[i][j] , "+++" , parseFloat(data.map[i][j]))
                   sum[j] += cuisine_count[i] * parseFloat(data.map[i][j]) / 100.0;
                 }
             }
@@ -461,7 +472,6 @@ User.findOne({username:req.body.username},function(err,user){
   }
   for(var i in cuisine_count) {
       for(var j in data.map[i]) {
-        console.log(data.map[i][j] , "+++" , parseFloat(data.map[i][j]))
         sum[j] += cuisine_count[i] * parseFloat(data.map[i][j]) / 100.0;
       }
   }
@@ -488,7 +498,6 @@ User.findOne({username:req.body.username},function(err,user){
      function(callback){
         yelp.search({category_filter:"restaurants",sort:"2",ll:req.body.latitude+","+req.body.longitude,radius_filter :"500",limit:'20',offset:'0'}, function(err,d){
           first = d.businesses;
-
           callback(null);
         });
       },
