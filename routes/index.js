@@ -406,44 +406,7 @@ router.get('/signout', function(req, res) {
         });
         user.save(function(err) {
           if (err) res.send(err);
-          else {
-            var sum = [];
-            var cuisine_count = [];
-            for(var i in data.dic) {
-              cuisine_count.push(0);
-              sum.push(0);
-            }
-            
-            for(var rh = 0 ; rh < user.history.length ; rh++) {
-              var arr = user.history[rh].categories;
-              for(var c = 0 ;c <  arr.length ; c++) {
-                var index = data.dic[arr[c]];
-                cuisine_count[index] += 1;
-              }
-            }
-            for(var i in cuisine_count) {
-                for(var j in data.map[i]) {
-                  sum[j] += cuisine_count[i] * parseFloat(data.map[i][j]) / 100.0;
-                }
-            }
-
-            var total = 0;
-            sum.forEach(function(d){
-              total += d;
-            });
-
-            //if total is 0, do not normalize it
-            if( parseInt(total) !== 0) {
-             sum = sum.map(function(d){
-                return d/total;
-              });
-            }
-            var preference = [];
-            for(var i in sum) {
-              preference.push(sum[i]);
-            }
-            res.send(preference)
-          }
+          res.send("user saved");
         });
      })
   });
@@ -452,13 +415,56 @@ router.get('/signout', function(req, res) {
  router.get('/user/:name', function(req,res) {
    User.findOne({username : req.params.name} , function(err, user) {
       if(err) res.send(err);
-      res.send(user);
+      if(!user) res.send('user not exist');
+      else {
+        var sum = [];
+        var cuisine_count = [];
+        for(var i in data.dic) {
+          cuisine_count.push(0);
+          sum.push(0);
+        }
+        
+        for(var rh = 0 ; rh < user.history.length ; rh++) {
+          var arr = user.history[rh].categories;
+          for(var c = 0 ;c <  arr.length ; c++) {
+            var index = data.dic[arr[c]];
+            cuisine_count[index] += 1;
+          }
+        }
+        for(var i in cuisine_count) {
+            for(var j in data.map[i]) {
+              sum[j] += cuisine_count[i] * parseFloat(data.map[i][j]) / 100.0;
+            }
+        }
+
+        var total = 0;
+        sum.forEach(function(d){
+          total += d;
+        });
+
+        //if total is 0, do not normalize it
+        if( parseInt(total) !== 0) {
+         sum = sum.map(function(d){
+            return d/total;
+          });
+        }
+        var preference = [];
+        for(var i in sum) {
+          preference.push(sum[i]);
+        }
+        user.preference = preference;
+        res.send({
+          user : user ,
+          preference : preference
+        })
+      }
    });
  });
 
 
 /* GET home page. */
 router.post('/search', function(req, res) {
+  if(!req.body.username) return res.send("no username found in the request body");
 User.findOne({username:req.body.username},function(err,user){
   if(user === null) {
      var user   = new User();
@@ -524,7 +530,10 @@ User.findOne({username:req.body.username},function(err,user){
           var sorted_result = _.sortBy(temp,function(rest){
               return 0-rest.score.total_score;
           });
-          res.send(sorted_result);
+          user.save(function (err) {
+            if(err) res.send(err);
+            else res.send(sorted_result);
+          });
         })
     });
 });
