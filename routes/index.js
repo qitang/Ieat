@@ -489,11 +489,10 @@ User.findOne({username:req.body.username},function(err,user){
       cuisine_count[index] += 1;
     }
   }
-  console.log(data.map[0], "---------")
   console.log(cuisine_count,"+++++++++++")
   for(var j= 0 ; j<data.map[0].length ; j++) {
-     for(var i in cuisine_count) {
-      console.log("i is ::" + i);
+     for(var i=0; i<cuisine_count.length ;i++) {
+  
        sum[j] +=cuisine_count[i] * parseFloat(data.map[i][j]) / 100.0;
      }
    }
