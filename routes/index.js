@@ -17,7 +17,7 @@ var models = require('../models/index');
 var User = models.User;
 var Restaurant = models.Restaurant;
 var moment = require('moment');
-
+var Stats = require('fast-stats').Stats;
 
 // Restaurant.findOne({id:'potbelly-sandwich-shop-new-york'},function(err,user){
 //    console.log("haha",user.isOpen(), user.open_hours);
@@ -431,27 +431,31 @@ router.get('/signout', function(req, res) {
             cuisine_count[index] += 1;
           }
         }
-        for(var i in cuisine_count) {
-            for(var j in data.map[i]) {
-              sum[j] += cuisine_count[i] * parseFloat(data.map[i][j]) / 100.0;
-            }
+        // for(var i in cuisine_count) {
+        //     for(var j in data.map[i]) {
+        //       console.log(data.map[i][j])
+        //       sum[j] += cuisine_count[i] * parseFloat(data.map[i][j]) / 100.0;
+        //     }
+        //     // console.log(sum[j]);
+        // }
+        for(var j= 0 ; j<data.map[0].length ; j++) {
+          for(var i in cuisine_count) {
+            sum[j] +=cuisine_count[i] * parseFloat(data.map[i][j]) / 100.0;
+          }
         }
-
         var total = 0;
         sum.forEach(function(d){
           total += d;
         });
 
-        //if total is 0, do not normalize it
-        if( parseInt(total) !== 0) {
-         sum = sum.map(function(d){
-            return d/total;
-          });
-        }
+       var s = new Stats().push(sum);
+       var mean = s.percentile(30);
+       var stddev = s.stddev();
         var preference = [];
         for(var i in sum) {
-          preference.push(sum[i]);
+          preference.push((sum[i]-mean)/3/stddev);
         }
+        console.log(preference)
         user.preference = preference;
         res.send({
           user : user ,
@@ -484,27 +488,31 @@ User.findOne({username:req.body.username},function(err,user){
       cuisine_count[index] += 1;
     }
   }
-  for(var i in cuisine_count) {
-      for(var j in data.map[i]) {
-        sum[j] += cuisine_count[i] * parseFloat(data.map[i][j]) / 100.0;
-      }
-  }
+  for(var j= 0 ; j<data.map[0].length ; j++) {
+     for(var i in cuisine_count) {
+       sum[j] +=cuisine_count[i] * parseFloat(data.map[i][j]) / 100.0;
+     }
+   }
 
   var total = 0;
   sum.forEach(function(d){
     total += d;
   });
+  
+  var s = new Stats().push(sum);
+  var mean = s.percentile(30);
+  var stddev = s.stddev();
 
-  //if total is 0, do not normalize it
-  if( parseInt(total) !== 0) {
-   sum = sum.map(function(d){
-      return d/total;
-    });
-  }
+  // //if total is 0, do not normalize it
+  // if( parseInt(total) !== 0) {
+  //  sum = sum.map(function(d){
+  //     return d/total;
+  //   });
+  // }
   
   var preference = [];
   for(var i in sum) {
-    preference.push(sum[i]);
+    preference.push((sum[i] - mean)/3/stddev);
   }
   var first;
   var second;
