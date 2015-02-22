@@ -19,7 +19,6 @@ var Restaurant = models.Restaurant;
 var moment = require('moment');
 var Stats = require('fast-stats').Stats;
 
-console.log(data.map)
 
 // Restaurant.findOne({id:'potbelly-sandwich-shop-new-york'},function(err,user){
 //    console.log("haha",user.isOpen(), user.open_hours);
@@ -490,8 +489,11 @@ User.findOne({username:req.body.username},function(err,user){
       cuisine_count[index] += 1;
     }
   }
+  console.log(data.map[0], "---------")
+  console.log(cuisine_count,"+++++++++++")
   for(var j= 0 ; j<data.map[0].length ; j++) {
      for(var i in cuisine_count) {
+      console.log("i is ::" + i);
        sum[j] +=cuisine_count[i] * parseFloat(data.map[i][j]) / 100.0;
      }
    }
