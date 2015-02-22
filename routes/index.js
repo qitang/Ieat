@@ -19,6 +19,8 @@ var Restaurant = models.Restaurant;
 var moment = require('moment');
 var Stats = require('fast-stats').Stats;
 
+console.log(data.map)
+
 // Restaurant.findOne({id:'potbelly-sandwich-shop-new-york'},function(err,user){
 //    console.log("haha",user.isOpen(), user.open_hours);
 // })
