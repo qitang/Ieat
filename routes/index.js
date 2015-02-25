@@ -518,7 +518,7 @@ User.findOne({username:req.body.username},function(err,user){
   for(var i in sum) {
     preference.push((sum[i] - mean)/3/stddev);
   }
-  console.log("prefernce is ", prefernce)
+  console.log("prefernce is ", preference)
   var first;
   var second;
   async.parallel([
