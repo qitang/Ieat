@@ -461,7 +461,6 @@ router.get('/signout', function(req, res) {
         for(var i in sum) {
           preference.push((sum[i]-mean)/3/stddev);
         }
-        console.log(preference)
         user.preference = preference;
         res.send({
           user : user ,
@@ -500,7 +499,6 @@ User.findOne({username:req.body.username},function(err,user){
        sum[j] +=cuisine_count[i] * parseFloat(data.map[i][j]) / 100.0;
      }
    }
-   console.log("sum is ", sum)
   var total = 0;
   sum.forEach(function(d){
     total += d;
@@ -528,7 +526,7 @@ User.findOne({username:req.body.username},function(err,user){
      function(callback){
         yelp.search({category_filter:"restaurants",sort:"2",ll:req.body.latitude+","+req.body.longitude,radius_filter :"500",limit:'20',offset:'0'}, function(err,d){
           first = d.businesses;
-          console.log(first)
+          console.log("got ",first.length, "restaurants")
           if(err) callback(err);
           else callback(null);
         });
@@ -536,7 +534,7 @@ User.findOne({username:req.body.username},function(err,user){
       function(callback){
         yelp.search({category_filter:"restaurants",sort:"2",ll:req.body.latitude+","+req.body.longitude,radius_filter :"500",limit:'20',offset:'20'}, function(err,d){
            second = d.businesses;
-           console.log(second)
+          console.log("got ",second.length, "restaurants")
           if(err) callback(err);
           else callback(null);
         });
@@ -548,6 +546,7 @@ User.findOne({username:req.body.username},function(err,user){
         processResult(temp,function(err,rests,total_obj){
            if(err) return res.send(err);
            rests.forEach(function(d){
+            console.log("calculate restaurant score")
                d.score = cal(d,preference,total_obj.comments/temp.length,total_obj.prices/temp.length);
            });
            var sorted_result = _.sortBy(temp,function(rest){
