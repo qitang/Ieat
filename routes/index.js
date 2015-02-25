@@ -328,6 +328,7 @@ function cal(rest,preference,comment_avg,price_avg,price) {
   if(isFinite(max_cuisine_score)) {
     cuisine_score = ( max_cuisine_score + 0.5) * base.cuisine;
   } else {
+    console.log("no cuisine score")
     cuisine_score = 0;
   }
   
@@ -496,6 +497,7 @@ User.findOne({username:req.body.username},function(err,user){
        sum[j] +=cuisine_count[i] * parseFloat(data.map[i][j]) / 100.0;
      }
    }
+   console.log("sum is ", sum)
   var total = 0;
   sum.forEach(function(d){
     total += d;
@@ -511,7 +513,7 @@ User.findOne({username:req.body.username},function(err,user){
   //     return d/total;
   //   });
   // }
-  
+    console.log("prefernce is ", prefernce)
   var preference = [];
   for(var i in sum) {
     preference.push((sum[i] - mean)/3/stddev);
