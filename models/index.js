@@ -53,16 +53,16 @@ userSchema.methods.validPassword = function(password){
 
 
 restaurantSchema.methods.isOpen = function() {
-  if(!this.open_hours) return false;
+  if(!this.open_hours || this.length ===0) return true;
   var now = moment().tz("America/New_York");
-  console.log(now.format())
+  var day = now.format("YYYY-MM-DD");
   var today = now.format('ddd HH:mm').split(' ')[0];
   for(var i =0 ; i< this.open_hours.length ; i++) {
     if( this.open_hours[i].day === today) {
       var hours = this.open_hours[i].hours.replace(/\n|\s/g,'').split('-');
       if(hours.length < 2) return false;
-      var left = moment(hours[0] , 'hmma');
-      var right = moment(hours[1] , 'hmma');
+      var left = moment.tz(day + " " + hours[0] , 'YYYY-MM-DD hmma','America/New_York');
+      var right = moment.tz(day + " " + hours[1] , 'YYYY-MM-DD hmma','America/New_York');
       if(now.isBefore(left,'minute')) return false;
       //if open hours to am, means untill tomorrow
       if(hours[1].indexOf('am') !== -1) return true;
@@ -70,7 +70,7 @@ restaurantSchema.methods.isOpen = function() {
       return true;
     }
   }
-  return false;
+  return true;
 };
 
 User = mongoose.model('User', userSchema);
