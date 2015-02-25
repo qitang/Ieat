@@ -249,6 +249,7 @@ function processResult(rests,cb) {
                   // });
               }
               doc.save(function(err){
+                if(err) callback(err);
                 callback();
               });
             })
@@ -263,7 +264,7 @@ function processResult(rests,cb) {
         }
     })
   },function(err){
-      cb(rests,obj);
+      cb(err, rests, obj);
   });
 }
 
@@ -472,6 +473,7 @@ router.post('/search', function(req, res) {
   if(!req.body.username) return res.send("no username found in the request body");
 User.findOne({username:req.body.username},function(err,user){
   if(user === null) {
+     console.log("no user is find in the databse, will create a new one");
      var user   = new User();
      user.username    = req.body.username;
   }
@@ -494,7 +496,6 @@ User.findOne({username:req.body.username},function(err,user){
        sum[j] +=cuisine_count[i] * parseFloat(data.map[i][j]) / 100.0;
      }
    }
-
   var total = 0;
   sum.forEach(function(d){
     total += d;
@@ -521,29 +522,37 @@ User.findOne({username:req.body.username},function(err,user){
      function(callback){
         yelp.search({category_filter:"restaurants",sort:"2",ll:req.body.latitude+","+req.body.longitude,radius_filter :"500",limit:'20',offset:'0'}, function(err,d){
           first = d.businesses;
-          callback(null);
+          if(err) callback(err);
+          else callback(null);
         });
       },
       function(callback){
         yelp.search({category_filter:"restaurants",sort:"2",ll:req.body.latitude+","+req.body.longitude,radius_filter :"500",limit:'20',offset:'20'}, function(err,d){
            second = d.businesses;
-          callback(null);
+          if(err) callback(err);
+          else callback(null);
         });
       }
     ],function(err){
+      if(err) return res.send(err);
       var temp = _.union(first,second);
-       processResult(temp,function(rests,total_obj){
-          rests.forEach(function(d){
-              d.score = cal(d,preference,total_obj.comments/temp.length,total_obj.prices/temp.length);
-          });
-          var sorted_result = _.sortBy(temp,function(rest){
-              return 0-rest.score.total_score;
-          });
-          user.save(function (err) {
-            if(err) res.send(err);
-            else res.send(sorted_result);
-          });
-        })
+      try{
+        processResult(temp,function(err,rests,total_obj){
+           if(err) return res.send(err);
+           rests.forEach(function(d){
+               d.score = cal(d,preference,total_obj.comments/temp.length,total_obj.prices/temp.length);
+           });
+           var sorted_result = _.sortBy(temp,function(rest){
+               return 0-rest.score.total_score;
+           });
+           user.save(function (err) {
+             if(err) res.send(err);
+             else res.send(sorted_result);
+           });
+         })
+      } catch(e) {
+        console.log(e.message);
+      } 
     });
 });
 
