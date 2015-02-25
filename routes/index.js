@@ -513,11 +513,12 @@ User.findOne({username:req.body.username},function(err,user){
   //     return d/total;
   //   });
   // }
-    console.log("prefernce is ", prefernce)
+    
   var preference = [];
   for(var i in sum) {
     preference.push((sum[i] - mean)/3/stddev);
   }
+  console.log("prefernce is ", prefernce)
   var first;
   var second;
   async.parallel([
