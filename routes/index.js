@@ -528,6 +528,7 @@ User.findOne({username:req.body.username},function(err,user){
      function(callback){
         yelp.search({category_filter:"restaurants",sort:"2",ll:req.body.latitude+","+req.body.longitude,radius_filter :"500",limit:'20',offset:'0'}, function(err,d){
           first = d.businesses;
+          console.log(first)
           if(err) callback(err);
           else callback(null);
         });
@@ -535,6 +536,7 @@ User.findOne({username:req.body.username},function(err,user){
       function(callback){
         yelp.search({category_filter:"restaurants",sort:"2",ll:req.body.latitude+","+req.body.longitude,radius_filter :"500",limit:'20',offset:'20'}, function(err,d){
            second = d.businesses;
+           console.log(second)
           if(err) callback(err);
           else callback(null);
         });
