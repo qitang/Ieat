@@ -55,6 +55,7 @@ userSchema.methods.validPassword = function(password){
 restaurantSchema.methods.isOpen = function() {
   if(!this.open_hours) return false;
   var now = moment().tz("America/New_York");
+  console.log(now.format())
   var today = now.format('ddd HH:mm').split(' ')[0];
   for(var i =0 ; i< this.open_hours.length ; i++) {
     if( this.open_hours[i].day === today) {
