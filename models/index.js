@@ -1,6 +1,7 @@
 var mongoose = require('mongoose');
 var bcrypt = require('bcrypt-nodejs');
-var moment = require('moment');
+// var moment = require('moment');
+var moment = require('moment-timezone');
 //mongoose.connect('mongodb://localhost/wikistack');
 mongoose.connect('mongodb://heroku_app31997271:7fhar9roop1b3b6pofksour5qi@ds053310.mongolab.com:53310/heroku_app31997271/Ieat');
 //mongoose.connect('mongodb://heroku_app31997271:7fhar9roop1b3b6pofksour5qi@ds053310.mongolab.com:53310/heroku_app31997271/Ieat');
@@ -53,9 +54,8 @@ userSchema.methods.validPassword = function(password){
 
 restaurantSchema.methods.isOpen = function() {
   if(!this.open_hours) return false;
-  var now = moment();
+  var now = moment().tz("America/New_York");
   var today = now.format('ddd HH:mm').split(' ')[0];
-  console.log(today, moment().format('YYYY-MM-D HH:mm'));
   for(var i =0 ; i< this.open_hours.length ; i++) {
     if( this.open_hours[i].day === today) {
       var hours = this.open_hours[i].hours.replace(/\n|\s/g,'').split('-');

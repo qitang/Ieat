@@ -20,7 +20,7 @@ var moment = require('moment');
 var Stats = require('fast-stats').Stats;
 
 
-// Restaurant.findOne({id:'potbelly-sandwich-shop-new-york'},function(err,user){
+// Restaurant.findOne({id:'johnny-rockets-jersey-city'},function(err,user){
 //    console.log("haha",user.isOpen(), user.open_hours);
 // })
 
