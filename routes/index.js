@@ -307,8 +307,10 @@ function cal(rest,preference,comment_avg,price_avg,price) {
   var max_time_score = Number.NEGATIVE_INFINITY;
   var price_score;
   var cuisine_score;
-  var time_score
+  var time_score;
+  console.log("function called");
   for(var iter in rest.categories) {
+    console.log(rest.categories[iter])
     if(typeof data.dic[getCateMap[rest.categories[iter][0].replace(/\s/g,"_")]] === 'undefined') {
        max_time_score =  Math.max(max_time_score, parseInt(getTimeMap['Others'][time_zone[parseInt(moment().format('HH'))]].slice(0,-1)));
        continue;
