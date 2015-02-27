@@ -59,7 +59,8 @@ var userSchema = new Schema({
    ave_price: Number,
    history:[{
     restaurant : { type: Schema.Types.ObjectId, ref: 'Restaurant' },
-    like:Number
+    like:Number,
+    date : {type: Date, default: Date.now}
    }]
 });
 
