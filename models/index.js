@@ -20,7 +20,33 @@ var restaurantSchema = new Schema({
   open_hours:[{
     day : String,
     hours : String
-  }]
+  }],
+  categories:[String],
+  is_claimed:Boolean,
+  is_closed :Boolean,
+  name:String,
+  image_url:String,
+  mobile_url : String,
+  phone : String,
+  display_phone:String,
+  review_count: Number,
+  rating: String,
+  snippet_text: String,
+  menu_provier:String,
+  menu_date_updated:String,
+  location :{
+    city : String,
+    display_address : [String],
+    geo_accuracy : Number,
+    postal_code : String,
+    country_code : String,
+    address : [String],
+    state_code : String,
+    coordinate : {
+      latitude : Number,
+      longitude : Number
+    }
+  }
 });
 
 var userSchema = new Schema({
@@ -32,8 +58,7 @@ var userSchema = new Schema({
    title:String,
    ave_price: Number,
    history:[{
-    id:String,
-    categories: [String],
+    restaurant : { type: Schema.Types.ObjectId, ref: 'Restaurant' },
     like:Number
    }]
 });

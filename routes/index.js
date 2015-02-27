@@ -403,68 +403,77 @@ router.get('/signout', function(req, res) {
           }
           temp.push(getCateMap[rest.categories[iter][0].replace(/\s/g,'_')]);
         }
-        user.history.push({
-          id:rest.id,
-          categories:temp,
-          like:req.body.like
-        });
-        user.save(function(err) {
-          if (err) res.send(err);
-          res.send("user saved");
+        rest.categories = temp;
+        Restaurant.findOneAndUpdate({id : rest.id}, rest, function(err, r){
+          if(err) return res.send(err);
+          else {
+            user.history.push({
+              restaurant:r._id,
+              like:req.body.like
+            });
+            user.save(function(err) {
+              if (err) return res.send(err);
+              res.send("user saved");
+            });
+          }
         });
      })
   });
 
 
  router.get('/user/:name', function(req,res) {
-   User.findOne({username : req.params.name} , function(err, user) {
-      if(err) res.send(err);
-      if(!user) res.send('user not exist');
-      else {
-        var sum = [];
-        var cuisine_count = [];
-        for(var i in data.dic) {
-          cuisine_count.push(0);
-          sum.push(0);
-        }
-        
-        for(var rh = 0 ; rh < user.history.length ; rh++) {
-          var arr = user.history[rh].categories;
-          for(var c = 0 ;c <  arr.length ; c++) {
-            var index = data.dic[arr[c]];
-            cuisine_count[index] += 1;
-          }
-        }
-        // for(var i in cuisine_count) {
-        //     for(var j in data.map[i]) {
-        //       console.log(data.map[i][j])
-        //       sum[j] += cuisine_count[i] * parseFloat(data.map[i][j]) / 100.0;
-        //     }
-        //     // console.log(sum[j]);
-        // }
-        for(var j= 0 ; j<data.map[0].length ; j++) {
-          for(var i in cuisine_count) {
-            sum[j] +=cuisine_count[i] * parseFloat(data.map[i][j]) / 100.0;
-          }
-        }
-        var total = 0;
-        sum.forEach(function(d){
-          total += d;
-        });
+  if(!req.params.name) return res.send("no username is found");
+   User.findOne({username : req.params.name}).populate('history.restaurant').exec(function(err,user){
+    console.log(user)
 
-       var s = new Stats().push(sum);
-       var mean = s.percentile(30);
-       var stddev = s.stddev();
-        var preference = [];
-        for(var i in sum) {
-          preference.push((sum[i]-mean)/3/stddev);
-        }
-        user.preference = preference;
-        res.send({
-          user : user ,
-          preference : preference
-        })
+    if(err) res.send(err);
+    if(!user) res.send('user not exist');
+    else {
+      var sum = [];
+      var cuisine_count = [];
+      for(var i in data.dic) {
+        cuisine_count.push(0);
+        sum.push(0);
       }
+      
+      for(var rh = 0 ; rh < user.history.length ; rh++) {
+        var arr = user.history[rh].restaurant.categories;
+        for(var c = 0 ;c <  arr.length ; c++) {
+          var index = data.dic[arr[c]];
+          cuisine_count[index] += 1;
+        }
+      }
+      // for(var i in cuisine_count) {
+      //     for(var j in data.map[i]) {
+      //       console.log(data.map[i][j])
+      //       sum[j] += cuisine_count[i] * parseFloat(data.map[i][j]) / 100.0;
+      //     }
+      //     // console.log(sum[j]);
+      // }
+      for(var j= 0 ; j<data.map[0].length ; j++) {
+        for(var i in cuisine_count) {
+          sum[j] +=cuisine_count[i] * parseFloat(data.map[i][j]) / 100.0;
+        }
+      }
+      var total = 0;
+      sum.forEach(function(d){
+        total += d;
+      });
+
+     var s = new Stats().push(sum);
+     var mean = s.percentile(30);
+     var stddev = s.stddev();
+      var preference = [];
+      for(var i in sum) {
+        preference.push((sum[i]-mean)/3/stddev);
+      }
+      user.preference = preference;
+      res.send({
+        user : user ,
+        preference : preference
+      })
+    }
+    
    });
  });
 
