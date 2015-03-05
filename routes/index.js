@@ -329,7 +329,7 @@ function cal(rest,preference,comment_avg,price_avg,price) {
   if(isFinite(max_cuisine_score)) {
     cuisine_score = ( max_cuisine_score + 0.5) * base.cuisine;
   } else {
-    console.log("no cuisine score")
+    console.log("no cuisine score the rest categories is ", rest.categories)
     cuisine_score = 0;
   }
   
@@ -481,7 +481,7 @@ router.get('/signout', function(req, res) {
 /* GET home page. */
 router.post('/search', function(req, res) {
   if(!req.body.username) return res.send("no username found in the request body");
-User.findOne({username:req.body.username},function(err,user){
+User.findOne({username:req.body.username}).populate('history.restaurant').exec(function(err,user){
   if(user === null) {
      console.log("no user is find in the databse, will create a new one");
      var user   = new User();
@@ -493,9 +493,9 @@ User.findOne({username:req.body.username},function(err,user){
     cuisine_count.push(0);
     sum.push(0);
   }
-  
+ 
   for(var rh = 0 ; rh < user.history.length ; rh++) {
-    var arr = user.history[rh].categories;
+    var arr = user.history[rh].restaurant.categories;
     for(var c = 0 ;c <  arr.length ; c++) {
       var index = data.dic[arr[c]];
       cuisine_count[index] += 1;
