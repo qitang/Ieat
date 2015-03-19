@@ -186,63 +186,106 @@ var Stats = require('fast-stats').Stats;
 //   });
 // });
 
+function getPreference(user) {
+  var sum = [];
+  var cuisine_count = [];
+  for(var i in data.dic) {
+    cuisine_count.push(0);
+    sum.push(0);
+  }
+  
+  for(var rh = 0 ; rh < user.history.length ; rh++) {
+    var arr = user.history[rh].restaurant.categories;
+    for(var c = 0 ;c <  arr.length ; c++) {
+      var index = data.dic[arr[c]];
+      cuisine_count[index] += 1;
+    }
+  }
+  for(var j= 0 ; j<data.map[0].length ; j++) {
+     for(var i in cuisine_count) {
+       sum[j] +=cuisine_count[i] * parseFloat(data.map[i][j]) / 100.0;
+     }
+   }
+  var total = 0;
+  sum.forEach(function(d){
+    total += d;
+  });
+  
+  var s = new Stats().push(sum);
+  var mean = s.percentile(30);
+  var stddev = s.stddev();
 
-function processResult(rests,cb) {
+  // //if total is 0, do not normalize it
+  // if( parseInt(total) !== 0) {
+  //  sum = sum.map(function(d){
+  //     return d/total;
+  //   });
+  // }
+    
+  var preference = [];
+  for(var i in sum) {
+    preference.push((sum[i] - mean)/3/stddev);
+  }
+  console.log("prefernce is ", preference);
+  return preference;
+}
+
+function processResult(restaurants,cb) {
   var obj = {
        comments : 0,
         prices : 0 
   }
   
-  async.each(rests,function(r,callback){
-    obj.comments += r.review_count;
-    Restaurant.findOne({id:r.id},function(err,doc){
+  async.each(restaurants,function(restaurant,callback){
+    obj.comments += restaurant.review_count;
+    Restaurant.findOne({id:restaurant.id},function(err,doc){
         if(doc ===null) {
             doc = new Restaurant();
-            doc.id = r.id;
+            doc.id = restaurant.id;
             request({
-               url: "http://www.yelp.com/biz/" + r.id,
+               url: "http://www.yelp.com/biz/" + restaurant.id,
                json: true
             }, function (error, response, body) {
               if (!error && response.statusCode === 200) {
                   var $ = cheerio.load( body);
-                  // r.food_image_url = $("div.showcase-photo-box img.photo-box-img[height='250']").first().attr("src").replace(/ls(?=.jpg)/,"o");
-                  r.food_image_url = [];
-                  r.open_hours = [];
+                  // restaurant.food_image_url = $("div.showcase-photo-box img.photo-box-img[height='250']").first().attr("src").replace(/ls(?=.jpg)/,"o");
+                  restaurant.food_image_url = [];
+                  restaurant.open_hours = [];
                   $("div.showcase-photo-box img.photo-box-img[height='250']").each(function(i,e){
-                    r.food_image_url.push($(this).attr("src").replace(/ls(?=.jpg)/,"o"));
+                    restaurant.food_image_url.push($(this).attr("src").replace(/ls(?=.jpg)/,"o"));
                   });
-                  doc.food_image_url = r.food_image_url;
-                  r.good_for = $('div.short-def-list dl dt').filter(function(i,el){ return $(this).text().trim() === 'Good For'}).siblings().text().trim().toLowerCase();
-                  doc.good_for = r.good_for;
+                  doc.food_image_url = restaurant.food_image_url;
+                  restaurant.good_for = $('div.short-def-list dl dt').filter(function(i,el){ return $(this).text().trim() === 'Good For'}).siblings().text().trim().toLowerCase();
+                  doc.good_for = restaurant.good_for;
 
                   $('table.hours-table tr').each(function(i,element){
                     var day = $(this).children('th').text().trim();
                     var hours = $(this).children('td').first().text().trim();
-                    r.open_hours.push({
+                    restaurant.open_hours.push({
                       day : day,
                       hours : hours
                     });
                   });
-                  doc.open_hours = r.open_hours;
+                  doc.open_hours = restaurant.open_hours;
                   var p = $('div.price-category span.price-range').text();
                   if(p) {
-                    r.price = p.trim().length;
-                    doc.price = r.price;
-                    obj.price = r.price;
+                    restaurant.price = p.trim().length;
+                    doc.price = restaurant.price;
+                    obj.price = restaurant.price;
                   } else {
-                    r.price = 2.5;
+                    restaurant.price = 2.5;
                     doc.price = 2.5;
                     obj.prices += 2.5;
                   }
-                  r.open = doc.isOpen();
+                  restaurant.open = doc.isOpen();
                   // $('div.search-result').each(function(index, a) {
                   //   if($(this).find('span.price-range').text() !== "") {
-                  //      r.price = $(this).find('span.price-range').text().trim().length;
-                  //      doc.price = r.price;
-                  //      obj.prices += r.price;
+                  //      restaurant.price = $(this).find('span.price-range').text().trim().length;
+                  //      doc.price = restaurant.price;
+                  //      obj.prices += restaurant.price;
                   //   }
                   //    else {
-                  //     r.price = 2.5;
+                  //     restaurant.price = 2.5;
                   //     doc.price = 2.5;
                   //     obj.prices += 2.5;
                   //   }
@@ -254,17 +297,17 @@ function processResult(rests,cb) {
               });
             })
         } else {
-          r.open = doc.isOpen();
-          r.price = doc.price;
-          obj.prices += r.price;
-          r.food_image_url = doc.food_image_url;
-          r.good_for = doc.good_for;
-          r.open_hours = doc.open_hours;
+          restaurant.open = doc.isOpen();
+          restaurant.price = doc.price;
+          obj.prices += restaurant.price;
+          restaurant.food_image_url = doc.food_image_url;
+          restaurant.good_for = doc.good_for;
+          restaurant.open_hours = doc.open_hours;
           callback();
         }
     })
   },function(err){
-      cb(err, rests, obj);
+      cb(err, restaurants, obj);
   });
 }
 
@@ -275,7 +318,7 @@ var yelp = require("yelp").createClient({
   token_secret: "OEdg-WFJpQRSzplKEtT1RH-3UP4"
 });
 
-function cal(rest,preference,comment_avg,price_avg,price) {
+function getScore(restaurant,preference,comment_avg,price_avg) {
   var average = {
       rating:0,
       comments:0,
@@ -290,7 +333,7 @@ function cal(rest,preference,comment_avg,price_avg,price) {
     time:30
   }
   
-  if(!rest.open) {
+  if(!restaurant.open) {
     return {
       rating_score : 0,
       cuisine_score : 0,
@@ -302,26 +345,26 @@ function cal(rest,preference,comment_avg,price_avg,price) {
     }
   }
 
-  var rating_score = (rest.rating - 2) * base.rating /3;
+  var rating_score = (restaurant.rating - 2) * base.rating /3;
   var max_cuisine_score = Number.NEGATIVE_INFINITY;
   var max_time_score = Number.NEGATIVE_INFINITY;
   var price_score;
   var cuisine_score;
   var time_score;
-  for(var iter in rest.categories) {
-   // console.log(rest.categories[iter])
-    if(typeof data.dic[getCateMap[rest.categories[iter][0].replace(/\s/g,"_")]] === 'undefined') {
+  for(var iter in restaurant.categories) {
+   // console.log(restaurant.categories[iter])
+    if(typeof data.dic[getCateMap[restaurant.categories[iter][0].replace(/\s/g,"_")]] === 'undefined') {
        max_time_score =  Math.max(max_time_score, parseInt(getTimeMap['Others'][time_zone[parseInt(moment().format('HH'))]].slice(0,-1)));
        continue;
     }
-    max_cuisine_score = Math.max(max_cuisine_score, preference[data.dic[getCateMap[rest.categories[iter][0].replace(/\s/g,"_")]]]);
-    max_time_score = Math.max(max_time_score, parseInt(getTimeMap[getCateMap[rest.categories[iter][0].replace(/\s/g,"_")]][time_zone[parseInt(moment().format('HH'))]].slice(0,-1)));
-    //console.log(getCateMap[rest.categories[iter][0].replace(/\s/g,"_")] , "----" , getTimeMap[getCateMap[rest.categories[iter][0].replace(/\s/g,"_")]][time_zone[parseInt(moment().format('HH'))]].slice(0,-1))
+    max_cuisine_score = Math.max(max_cuisine_score, preference[data.dic[getCateMap[restaurant.categories[iter][0].replace(/\s/g,"_")]]]);
+    max_time_score = Math.max(max_time_score, parseInt(getTimeMap[getCateMap[restaurant.categories[iter][0].replace(/\s/g,"_")]][time_zone[parseInt(moment().format('HH'))]].slice(0,-1)));
+    //console.log(getCateMap[restaurant.categories[iter][0].replace(/\s/g,"_")] , "----" , getTimeMap[getCateMap[restaurant.categories[iter][0].replace(/\s/g,"_")]][time_zone[parseInt(moment().format('HH'))]].slice(0,-1))
    //console.log(time_zone[parseInt(moment().format('HH'))])
   }
   max_time_score *=  1.0 * base.time/100;
-  if(rest.good_for) {
-    if(rest.good_for.replace(/\s+/,"").indexOf(time_zone[parseInt(moment().format('HH'))]) !== -1) {
+  if(restaurant.good_for) {
+    if(restaurant.good_for.replace(/\s+/,"").indexOf(time_zone[parseInt(moment().format('HH'))]) !== -1) {
       max_time_score +=1;
     }
   }
@@ -329,14 +372,14 @@ function cal(rest,preference,comment_avg,price_avg,price) {
   if(isFinite(max_cuisine_score)) {
     cuisine_score = ( max_cuisine_score + 0.5) * base.cuisine;
   } else {
-    console.log("no cuisine score the rest categories is ", rest.categories)
+    console.log("no cuisine score the restaurant categories is ", restaurant.categories)
     cuisine_score = 0;
   }
   
   var price_socre;
-  var distance_score = (Math.exp(1-rest.distance/400))* base.distance/2.718
-  var comment_score = (rest.review_count > comment_avg ? Math.log(rest.review_count) / Math.log(comment_avg) : rest.review_count/comment_avg) * base["comments"];
-  price_score = rest.price < price_avg ? base.price : base.price/(1 + (rest.price - price_avg) * 2 );
+  var distance_score = (Math.exp(1-restaurant.distance/400))* base.distance/2.718
+  var comment_score = (restaurant.review_count > comment_avg ? Math.log(restaurant.review_count) / Math.log(comment_avg) : restaurant.review_count/comment_avg) * base["comments"];
+  price_score = restaurant.price < price_avg ? base.price : base.price/(1 + (restaurant.price - price_avg) * 2 );
   var total_score =  rating_score + cuisine_score + distance_score + comment_score + price_score + time_score;
   return {
     rating_score : rating_score,
@@ -404,7 +447,7 @@ router.get('/signout', function(req, res) {
           temp.push(getCateMap[rest.categories[iter][0].replace(/\s/g,'_')]);
         }
         rest.categories = temp;
-        Restaurant.findOneAndUpdate({id : rest.id}, rest, function(err, r){
+        Restaurant.findOneAndUpdate({id : rest.id}, rest,{upsert:true}, function(err, r){
           if(err) return res.send(err);
           else {
             user.history.push({
@@ -429,51 +472,50 @@ router.get('/signout', function(req, res) {
     if(err) res.send(err);
     if(!user) res.send('user not exist');
     else {
-      var sum = [];
-      var cuisine_count = [];
-      for(var i in data.dic) {
-        cuisine_count.push(0);
-        sum.push(0);
-      }
+     //  var sum = [];
+     //  var cuisine_count = [];
+     //  for(var i in data.dic) {
+     //    cuisine_count.push(0);
+     //    sum.push(0);
+     //  }
       
-      for(var rh = 0 ; rh < user.history.length ; rh++) {
-        var arr = user.history[rh].restaurant.categories;
-        for(var c = 0 ;c <  arr.length ; c++) {
-          var index = data.dic[arr[c]];
-          cuisine_count[index] += 1;
-        }
-      }
-      // for(var i in cuisine_count) {
-      //     for(var j in data.map[i]) {
-      //       console.log(data.map[i][j])
-      //       sum[j] += cuisine_count[i] * parseFloat(data.map[i][j]) / 100.0;
-      //     }
-      //     // console.log(sum[j]);
-      // }
-      for(var j= 0 ; j<data.map[0].length ; j++) {
-        for(var i in cuisine_count) {
-          sum[j] +=cuisine_count[i] * parseFloat(data.map[i][j]) / 100.0;
-        }
-      }
-      var total = 0;
-      sum.forEach(function(d){
-        total += d;
-      });
+     //  for(var rh = 0 ; rh < user.history.length ; rh++) {
+     //    var arr = user.history[rh].restaurant.categories;
+     //    for(var c = 0 ;c <  arr.length ; c++) {
+     //      var index = data.dic[arr[c]];
+     //      cuisine_count[index] += 1;
+     //    }
+     //  }
+     //  // for(var i in cuisine_count) {
+     //  //     for(var j in data.map[i]) {
+     //  //       console.log(data.map[i][j])
+     //  //       sum[j] += cuisine_count[i] * parseFloat(data.map[i][j]) / 100.0;
+     //  //     }
+     //  //     // console.log(sum[j]);
+     //  // }
+     //  for(var j= 0 ; j<data.map[0].length ; j++) {
+     //    for(var i in cuisine_count) {
+     //      sum[j] +=cuisine_count[i] * parseFloat(data.map[i][j]) / 100.0;
+     //    }
+     //  }
+     //  var total = 0;
+     //  sum.forEach(function(d){
+     //    total += d;
+     //  });
 
-     var s = new Stats().push(sum);
-     var mean = s.percentile(30);
-     var stddev = s.stddev();
-      var preference = [];
-      for(var i in sum) {
-        preference.push((sum[i]-mean)/3/stddev);
-      }
-      user.preference = preference;
+     // var s = new Stats().push(sum);
+     // var mean = s.percentile(30);
+     // var stddev = s.stddev();
+     // var preference = [];
+     //  for(var i in sum) {
+     //    preference.push((sum[i]-mean)/3/stddev);
+     //  }
+      user.preference = getPreference(user);
       res.send({
         user : user ,
         preference : preference
       })
     }
-    
    });
  });
 
@@ -487,80 +529,81 @@ User.findOne({username:req.body.username}).populate('history.restaurant').exec(f
      var user   = new User();
      user.username    = req.body.username;
   }
-  var sum = [];
-  var cuisine_count = [];
-  for(var i in data.dic) {
-    cuisine_count.push(0);
-    sum.push(0);
-  }
- 
-  for(var rh = 0 ; rh < user.history.length ; rh++) {
-    var arr = user.history[rh].restaurant.categories;
-    for(var c = 0 ;c <  arr.length ; c++) {
-      var index = data.dic[arr[c]];
-      cuisine_count[index] += 1;
-    }
-  }
-  for(var j= 0 ; j<data.map[0].length ; j++) {
-     for(var i in cuisine_count) {
-       sum[j] +=cuisine_count[i] * parseFloat(data.map[i][j]) / 100.0;
-     }
-   }
-  var total = 0;
-  sum.forEach(function(d){
-    total += d;
-  });
-  
-  var s = new Stats().push(sum);
-  var mean = s.percentile(30);
-  var stddev = s.stddev();
-
-  // //if total is 0, do not normalize it
-  // if( parseInt(total) !== 0) {
-  //  sum = sum.map(function(d){
-  //     return d/total;
-  //   });
+  var preference = getPreference(user);
+  // var sum = [];
+  // var cuisine_count = [];
+  // for(var i in data.dic) {
+  //   cuisine_count.push(0);
+  //   sum.push(0);
   // }
+ 
+  // for(var rh = 0 ; rh < user.history.length ; rh++) {
+  //   var arr = user.history[rh].restaurant.categories;
+  //   for(var c = 0 ;c <  arr.length ; c++) {
+  //     var index = data.dic[arr[c]];
+  //     cuisine_count[index] += 1;
+  //   }
+  // }
+  // for(var j= 0 ; j<data.map[0].length ; j++) {
+  //    for(var i in cuisine_count) {
+  //      sum[j] +=cuisine_count[i] * parseFloat(data.map[i][j]) / 100.0;
+  //    }
+  //  }
+  // var total = 0;
+  // sum.forEach(function(d){
+  //   total += d;
+  // });
+  
+  // var s = new Stats().push(sum);
+  // var mean = s.percentile(30);
+  // var stddev = s.stddev();
+
+  // // //if total is 0, do not normalize it
+  // // if( parseInt(total) !== 0) {
+  // //  sum = sum.map(function(d){
+  // //     return d/total;
+  // //   });
+  // // }
     
-  var preference = [];
-  for(var i in sum) {
-    preference.push((sum[i] - mean)/3/stddev);
-  }
-  console.log("prefernce is ", preference)
-  var first;
-  var second;
+  // var preference = [];
+  // for(var i in sum) {
+  //   preference.push((sum[i] - mean)/3/stddev);
+  // }
+  // console.log("prefernce is ", preference)
+  var first_result;
+  var second_result;
   async.parallel([
      function(callback){
         yelp.search({category_filter:"restaurants",sort:"2",ll:req.body.latitude+","+req.body.longitude,radius_filter :"500",limit:'20',offset:'0'}, function(err,d){
-          first = d.businesses;
-          console.log("got ",first.length, "restaurants")
+          first_result = d.businesses;
+          console.log("got ",first_result.length, "restaurants")
           if(err) callback(err);
           else callback(null);
         });
       },
       function(callback){
         yelp.search({category_filter:"restaurants",sort:"2",ll:req.body.latitude+","+req.body.longitude,radius_filter :"500",limit:'20',offset:'20'}, function(err,d){
-           second = d.businesses;
-          console.log("got ",second.length, "restaurants")
+           second_result = d.businesses;
+          console.log("got ",second_result.length, "restaurants")
           if(err) callback(err);
           else callback(null);
         });
       }
     ],function(err){
       if(err) return res.send(err);
-      var temp = _.union(first,second);
+      var all_results = _.union(first_result,second_result);
       try{
-        processResult(temp,function(err,rests,total_obj){
+        processResult(all_results,function(err,rests,total_obj){
            if(err) return res.send(err);
            rests.forEach(function(d){
-               d.score = cal(d,preference,total_obj.comments/temp.length,total_obj.prices/temp.length);
+               d.score = getScore(d,preference,total_obj.comments/all_results.length,total_obj.prices/all_results.length);
            });
-           var sorted_result = _.sortBy(temp,function(rest){
-               return 0-rest.score.total_score;
+           var sorted_results = _.sortBy(all_results,function(restaurant){
+               return 0-restaurant.score.total_score;
            });
            user.save(function (err) {
              if(err) res.send(err);
-             else res.send(sorted_result);
+             else res.send(sorted_results);
            });
          })
       } catch(e) {
