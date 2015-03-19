@@ -318,7 +318,7 @@ var yelp = require("yelp").createClient({
   token_secret: "OEdg-WFJpQRSzplKEtT1RH-3UP4"
 });
 
-function getScore(restaurant,preference,comment_avg,price_avg) {
+function getScore(restaurant,preference,comment_avg,price_avg,radius) {
   var average = {
       rating:0,
       comments:0,
@@ -377,7 +377,7 @@ function getScore(restaurant,preference,comment_avg,price_avg) {
   }
   
   var price_socre;
-  var distance_score = (Math.exp(1-restaurant.distance/400))* base.distance/2.718
+  var distance_score = (Math.exp(1-restaurant.distance/radius))* base.distance/2.718
   var comment_score = (restaurant.review_count > comment_avg ? Math.log(restaurant.review_count) / Math.log(comment_avg) : restaurant.review_count/comment_avg) * base["comments"];
   price_score = restaurant.price < price_avg ? base.price : base.price/(1 + (restaurant.price - price_avg) * 2 );
   var total_score =  rating_score + cuisine_score + distance_score + comment_score + price_score + time_score;
@@ -596,7 +596,7 @@ User.findOne({username:req.body.username}).populate('history.restaurant').exec(f
         processResult(all_results,function(err,rests,total_obj){
            if(err) return res.send(err);
            rests.forEach(function(d){
-               d.score = getScore(d,preference,total_obj.comments/all_results.length,total_obj.prices/all_results.length);
+               d.score = getScore(d,preference,total_obj.comments/all_results.length,total_obj.prices/all_results.length, 500);
            });
            var sorted_results = _.sortBy(all_results,function(restaurant){
                return 0-restaurant.score.total_score;
