@@ -386,7 +386,7 @@ router.get('/signout', function(req, res) {
   router.post('/select',function(req,res) {
      User.findOne({username:req.body.username},function(err, user){
       var rest = req.body.restaurant;
-      if(! req.body.restaurant) {
+      if(! rest) {
         return res.send('restaurant undefined');
       }
         if(user === null) {
@@ -455,10 +455,10 @@ router.get('/signout', function(req, res) {
           sum[j] +=cuisine_count[i] * parseFloat(data.map[i][j]) / 100.0;
         }
       }
-      var total = 0;
-      sum.forEach(function(d){
-        total += d;
-      });
+      // var total = 0;
+      // sum.forEach(function(d){
+      //   total += d;
+      // });
 
      var s = new Stats().push(sum);
      var mean = s.percentile(30);
@@ -498,7 +498,7 @@ User.findOne({username:req.body.username}).populate('history.restaurant').exec(f
     var arr = user.history[rh].restaurant.categories;
     for(var c = 0 ;c <  arr.length ; c++) {
       var index = data.dic[arr[c]];
-      cuisine_count[index] += 1;
+      cuisine_count[index] += 1;//TODO: divided by length
     }
   }
   for(var j= 0 ; j<data.map[0].length ; j++) {
@@ -506,10 +506,10 @@ User.findOne({username:req.body.username}).populate('history.restaurant').exec(f
        sum[j] +=cuisine_count[i] * parseFloat(data.map[i][j]) / 100.0;
      }
    }
-  var total = 0;
-  sum.forEach(function(d){
-    total += d;
-  });
+  // var total = 0;
+  // sum.forEach(function(d){
+  //   total += d;
+  // });
   
   var s = new Stats().push(sum);
   var mean = s.percentile(30);
