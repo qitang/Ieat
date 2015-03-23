@@ -275,6 +275,7 @@ function getPreference(user) {
      cuisine_count.push(0);
      sum.push(0);
    }
+   if(user.history.length === 0 ) return sum;
    for(var rh = 0 ; rh < user.history.length ; rh++) {
      var arr = user.history[rh].restaurant.categories;
      for(var c = 0 ;c <  arr.length ; c++) {
@@ -291,6 +292,7 @@ function getPreference(user) {
   var s = new Stats().push(sum);
   var mean = s.percentile(30);
   var stddev = s.stddev();
+
    var preference = [];
    for(var i in sum) {
      preference.push((sum[i]-mean)/3/stddev);
@@ -300,7 +302,7 @@ function getPreference(user) {
   
 };
 
-function cal(rest,preference,comment_avg,price_avg,price) {
+function cal(rest,preference,comment_avg,price_avg,avgUserPrice) {
   var average = {
       rating:0,
       comments:0,
@@ -378,7 +380,7 @@ function cal(rest,preference,comment_avg,price_avg,price) {
   var price_socre;
   var distance_score = (Math.exp(1-rest.distance/400))* base.distance/2.718
   var comment_score = (rest.review_count > comment_avg ? Math.log(rest.review_count) / Math.log(comment_avg) : rest.review_count/comment_avg) * base["comments"];
-  price_score = rest.price < price_avg ? base.price : base.price/(1 + (rest.price - price_avg) * 2 );
+  price_score = rest.price < avgUserPrice ? base.price : base.price/(1 + (rest.price - avgUserPrice) * 2 );
   var total_score =  rating_score + cuisine_score + distance_score + comment_score + price_score + time_score;
   return {
     rating_score : rating_score,
@@ -493,6 +495,7 @@ router.post('/search', function(req, res) {
   var currentTime = req.body.time;
   console.log("radius is :" + radius , "currentTime is :"  + req.body.time)
   User.findOne({username:req.body.username}).populate('history.restaurant').exec(function(err,user){
+
   if(user === null) {
      console.log("no user is find in the databse, will create a new one");
      var user   = new User();
@@ -504,8 +507,12 @@ router.post('/search', function(req, res) {
     console.log("preference is " , preference);
     var totalUserPrice = 0;
     for(var i =0 ; i < user.history.length ; i++) {
-      totalUserPrice += parseInt(user.history[i].price);
+      var price = user.history[i].restaurant.price || 0;
+      totalUserPrice += parseInt(price);
     }
+    console.log(totalUserPrice)
+    var avgUserPrice = totalUserPrice === 0 ? 3.4 : totalUserPrice/user.history.length ;
+    console.log("average price is " , avgUserPrice)
   } catch(error) {
     return res.send(error.message)
   }
@@ -537,7 +544,7 @@ router.post('/search', function(req, res) {
         processResult(temp,function(err,rests,total_obj){
            if(err) return res.send(err);
            rests.forEach(function(d){
-               d.score = cal(d,preference,total_obj.comments/temp.length,total_obj.prices/temp.length);
+               d.score = cal(d,preference,total_obj.comments/temp.length,total_obj.prices/temp.length,avgUserPrice);
            });
            var sorted_result = _.sortBy(temp,function(rest){
                return 0-rest.score.total_score;
