@@ -513,7 +513,7 @@ router.post('/search', function(req, res) {
   var second;
   async.parallel([
      function(callback){
-        yelp.search({category_filter:"restaurants",sort:"2",ll:req.body.latitude+","+req.body.longitude,radius_filter :radius,limit:'20',offset:'0'}, function(err,d){
+        yelp.search({category_filter:"restaurants",sort:"2",ll:req.body.latitude+","+req.body.longitude,radius_filter :"500" ,limit:'20',offset:'0'}, function(err,d){
           first = d.businesses;
           if(!first) return callback('no result');
           console.log("got ",first.length, "restaurants")
@@ -522,7 +522,7 @@ router.post('/search', function(req, res) {
         });
       },
       function(callback){
-        yelp.search({category_filter:"restaurants",sort:"2",ll:req.body.latitude+","+req.body.longitude,radius_filter :radius,limit:'20',offset:'20'}, function(err,d){
+        yelp.search({category_filter:"restaurants",sort:"2",ll:req.body.latitude+","+req.body.longitude,radius_filter :"500" ,limit:'20',offset:'20'}, function(err,d){
           second = d.businesses;
           if(!second) return callback('no result');
           console.log("got ",second.length, "restaurants")
