@@ -489,7 +489,7 @@ router.get('/signout', function(req, res) {
 /* GET home page. */
 router.post('/search', function(req, res) {
   if(!req.body.username) return res.send("no username found in the request body");
-  var radius = req.body.radius || 500;
+  var radius = req.body.radius || String(500);
   var currentTime = req.body.time;
   console.log("radius is :" + radius , "currentTime is :"  + req.body.time)
   User.findOne({username:req.body.username}).populate('history.restaurant').exec(function(err,user){
@@ -501,7 +501,11 @@ router.post('/search', function(req, res) {
   var preference;
   try{
     preference = getPreference(user);
-    console.log("preference is " , preference)
+    console.log("preference is " , preference);
+    var totalUserPrice = 0;
+    for(var i =0 ; i < user.history.length ; i++) {
+      totalUserPrice += parseInt(user.history[i].price);
+    }
   } catch(error) {
     return res.send(error.message)
   }
