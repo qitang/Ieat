@@ -22,7 +22,7 @@ var Stats = require('fast-stats').Stats;
 
 
 // Restaurant.findOne({id:'statler-grill-new-york'},function(err,user){
-//    console.log("haha",user.isOpen(), user.open_hours);
+//    console.log("haha",user.isOpen("2015-03-29 3:55:18-04:00"), user.open_hours);
 // })
 
 // var contents = fs.readFileSync('./map.csv','utf-8');
@@ -187,7 +187,7 @@ var Stats = require('fast-stats').Stats;
 //   });
 // });
 
-function processResult(rests,cb) {
+function processResult(rests,currentTime,cb) {
   var obj = {
        comments : 0,
         prices : 0 
@@ -235,7 +235,7 @@ function processResult(rests,cb) {
                         doc.price = 2.5;
                         obj.prices += 2.5;
                       }
-                      r.open = doc.isOpen();
+                      r.open = doc.isOpen(currentTime);
                   }  catch (error) {
                      console.log(error.message)
                      callback(error.message)
@@ -247,7 +247,7 @@ function processResult(rests,cb) {
               });
             })
         } else {
-          r.open = doc.isOpen();
+          r.open = doc.isOpen(currentTime);
           r.price = doc.price;
           obj.prices += r.price;
           r.food_image_url = doc.food_image_url;
@@ -302,7 +302,7 @@ function getPreference(user) {
   
 };
 
-function cal(rest,preference,comment_avg,price_avg,avgUserPrice) {
+function getScore(rest,preference,comment_avg,price_avg,avgUserPrice) {
   var average = {
       rating:0,
       comments:0,
@@ -319,6 +319,7 @@ function cal(rest,preference,comment_avg,price_avg,avgUserPrice) {
   
   if(!rest.open) {
     return {
+      closed : true,
       rating_score : 0,
       cuisine_score : 0,
       distance_score : 0,
@@ -361,7 +362,7 @@ function cal(rest,preference,comment_avg,price_avg,avgUserPrice) {
      if(isFinite(max_cuisine_score)) {
        cuisine_score = ( max_cuisine_score + 0.5) * base.cuisine;
      } else {
-       console.log("no cuisine score the rest categories is ", rest.categories)
+       console.log("no cuisine score the rest categories is ", rest.categories,"the restaurant ID is " + rest.id)
        cuisine_score = 0;
      } 
   } catch(error) {
@@ -541,12 +542,17 @@ router.post('/search', function(req, res) {
       if(err) return res.send(err);
       var temp = _.union(first,second);
       try{
-        processResult(temp,function(err,rests,total_obj){
+        processResult(temp,currentTime,function(err,rests,total_obj){
            if(err) return res.send(err);
-           rests.forEach(function(d){
-               d.score = cal(d,preference,total_obj.comments/temp.length,total_obj.prices/temp.length,avgUserPrice);
-           });
-           var sorted_result = _.sortBy(temp,function(rest){
+           // rests.forEach(function(d){
+              
+           // });
+
+           var open_restaurants = _.filter(rests,function(d) {
+              d.score = getScore(d,preference,total_obj.comments/temp.length,total_obj.prices/temp.length,avgUserPrice);
+              return !d.score.closed;
+           })
+           var sorted_result = _.sortBy(open_restaurants,function(rest){
                return 0-rest.score.total_score;
            });
            user.save(function (err) {

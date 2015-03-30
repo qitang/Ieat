@@ -79,24 +79,37 @@ userSchema.methods.validPassword = function(password){
 
 
 restaurantSchema.methods.isOpen = function(now) {
-  if(!this.open_hours || this.length ===0) return true;
-  var now = moment().tz("America/New_York");
-  var day = now.format("YYYY-MM-DD");
+  if(!this.open_hours || this.open_hours.length === 0) return true;
+  var now;
+  if(now) {
+    now = moment(now);
+  } else {
+   now = moment();
+  }
   var today = now.format('ddd HH:mm').split(' ')[0];
+  var todayHours = now.format('ddd HH:mm').split(' ')[1];
   for(var i =0 ; i< this.open_hours.length ; i++) {
     if( this.open_hours[i].day === today) {
-      var hours = this.open_hours[i].hours.replace(/\n|\s/g,'').split('-');
-      if(hours.length < 2) return false;
-      var left = moment.tz(day + " " + hours[0] , 'YYYY-MM-DD hmma','America/New_York');
-      var right = moment.tz(day + " " + hours[1] , 'YYYY-MM-DD hmma','America/New_York');
-      if(now.isBefore(left,'minute')) return false;
-      //if open hours to am, means untill tomorrow
-      if(hours[1].indexOf('am') !== -1) return true;
-      if(now.isAfter(right, 'minute')) return false;
-      return true;
+      try {
+        if(/Closed/i.test(this.open_hours[i].hours)) return false;
+        var hours = this.open_hours[i].hours.replace(/\n|\s/g,'').split('-');
+        if(hours.length < 2) return false;
+        var target = moment(todayHours, 'hmma');
+        var left = moment(hours[0] , 'hmma');
+        var right = moment(hours[1] , 'hmma');
+        if(now.isBefore(left,'minute')) return false;
+        //if open hours to am, means untill tomorrow
+        if(hours[1].indexOf('am') !== -1) return true;
+        if(now.isAfter(right, 'minute')) return false;
+        return true;
+
+      } catch(error) {
+        console.log(error.message)
+        return false;
+      }
     }
   }
-  return true;
+    return false;
 };
 
 User = mongoose.model('User', userSchema);
