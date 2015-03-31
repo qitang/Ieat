@@ -237,8 +237,8 @@ function processResult(rests,currentTime,cb) {
                       }
                       
                   }  catch (error) {
-                     console.log(error.message)
-                     callback(error.message)
+                     console.log(error.stack)
+                     callback(error.stack)
                   }                 
               }
               Restaurant.create(r,function(err,newDoc){
@@ -381,7 +381,7 @@ function getScore(rest,preference,comment_avg,price_avg,avgUserPrice,radius,curr
        cuisine_score = 0;
      } 
   } catch(error) {
-     console.log(error.message);
+     console.log(error.stack);
      return  {
       rating_score : 0,
       cuisine_score : 0,
@@ -498,7 +498,7 @@ router.get('/signout', function(req, res) {
           preference : preference
         })
       } catch(err) {
-        return res.send(err.message)
+        return res.send(err.stack)
       }
     }
    });
@@ -531,7 +531,7 @@ router.post('/search', function(req, res) {
     var avgUserPrice = totalUserPrice === 0 ? 3.4 : totalUserPrice/user.history.length ;
     console.log("average price is " , avgUserPrice)
   } catch(error) {
-    return res.send(error.message)
+    return res.send(error.stack)
   }
   var first;
   var second;
@@ -577,8 +577,8 @@ router.post('/search', function(req, res) {
            });
          })
       } catch(e) {
-        console.log(e.message);
-        return res.send(e.message)
+        console.log(e.stack);
+        return res.send(e.stack)
       } 
     });
 });
