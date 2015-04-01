@@ -284,6 +284,10 @@ function getPreference(user) {
    if(user.history.length === 0 ) return sum;
    for(var rh = 0 ; rh < user.history.length ; rh++) {
      var arr = user.history[rh].restaurant.categories;
+     console.log("the restaurant is " ,user.history[rh].restaurant);
+     if(!arr) {
+        continue;
+     }
      for(var c = 0 ;c <  arr.length ; c++) {
        var index = data.dic[arr[c]];
        cuisine_count[index] += 1/arr.length;
