@@ -2,8 +2,8 @@ var mongoose = require('mongoose');
 var bcrypt = require('bcrypt-nodejs');
 // var moment = require('moment');
 var moment = require('moment-timezone');
-//mongoose.connect('mongodb://localhost/wikistack');
-mongoose.connect('mongodb://heroku_app31997271:7fhar9roop1b3b6pofksour5qi@ds053310.mongolab.com:53310/heroku_app31997271/Ieat');
+//mongoose.connect('mongodb://localhost/eatnow');
+mongoose.connect('mongodb://heroku_app31997271:7fhar9roop1b3b6pofksour5qi@ds053310.mongolab.com:53310/heroku_app31997271/eatnow');
 //mongoose.connect('mongodb://heroku_app31997271:7fhar9roop1b3b6pofksour5qi@ds053310.mongolab.com:53310/heroku_app31997271/Ieat');
 var db = mongoose.connection;
 db.on('error', console.error.bind(console, 'connection error:'));
@@ -11,41 +11,80 @@ db.on('error', console.error.bind(console, 'connection error:'));
 var User,Restaurant;
 var Schema = mongoose.Schema;
 
+// var restaurantSchema = new Schema({
+//   id:String,
+//   price:Number,
+//   food_image_url:[String],
+//   good_for: String,
+//   open:Boolean,
+//   open_hours:[{
+//     day : String,
+//     hours : String
+//   }],
+//   categories:[String],
+//   is_claimed:Boolean,
+//   is_closed :Boolean,
+//   name:String,
+//   image_url:String,
+//   mobile_url : String,
+//   phone : String,
+//   display_phone:String,
+//   review_count: Number,
+//   rating: String,
+//   snippet_text: String,
+//   menu_provier:String,
+//   menu_date_updated:String,
+//   location :{
+//     city : String,
+//     display_address : [String],
+//     geo_accuracy : Number,
+//     postal_code : String,
+//     country_code : String,
+//     address : [String],
+//     state_code : String,
+//     coordinate : {
+//       latitude : Number,
+//       longitude : Number
+//     }
+//   }
+// });
+
 var restaurantSchema = new Schema({
+  price:{
+    tier : Number,
+    message : String,
+    currency : String
+  },
+  rating : Number,
+  contact : {
+    phone : String,
+    formattedPhone : String,
+    twitter : String,
+    facebook :String
+  },
   id:String,
-  price:Number,
+  location:  {
+          address: String,
+          crossStreet: String,
+          lat: Number,
+          lng: Number,
+          postalCode: String,
+          cc: String,
+          city: String,
+          state: String,
+          country: String,
+  },
   food_image_url:[String],
-  good_for: String,
-  open:Boolean,
-  open_hours:[{
-    day : String,
-    hours : String
+  categories:[{
+    id : String,
+    name : String,
+    global : String
   }],
-  categories:[String],
-  is_claimed:Boolean,
-  is_closed :Boolean,
   name:String,
-  image_url:String,
-  mobile_url : String,
-  phone : String,
-  display_phone:String,
-  review_count: Number,
-  rating: String,
-  snippet_text: String,
-  menu_provier:String,
-  menu_date_updated:String,
-  location :{
-    city : String,
-    display_address : [String],
-    geo_accuracy : Number,
-    postal_code : String,
-    country_code : String,
-    address : [String],
-    state_code : String,
-    coordinate : {
-      latitude : Number,
-      longitude : Number
-    }
+  stats : {
+    checkinsCount : String,
+    usersCount : String,
+    tipCount : String
   }
 });
 
