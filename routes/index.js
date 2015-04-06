@@ -446,7 +446,7 @@ function getScore(rest,preference,comment_avg,avgUserPrice,radius,currentTime) {
      // }
      time_score = max_time_score;
      if(isFinite(max_cuisine_score)) {
-       cuisine_score = ( max_cuisine_score + 0.5) * base.cuisine;
+       cuisine_score = ( max_cuisine_score ) * base.cuisine;
      } else {
        console.log("no cuisine score the rest categories is ", rest.categories,"the restaurant ID is " + rest.id)
        cuisine_score = 0;
