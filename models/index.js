@@ -99,6 +99,11 @@ var userSchema = new Schema({
    history:[{
     restaurant : { type: Schema.Types.ObjectId, ref: 'Restaurant' },
     like:Number,
+    rating : Number,
+    location :{
+      latitude : Number,
+      longitude : Number
+    },
     date : {type: Date, default: Date.now}
    }]
 });

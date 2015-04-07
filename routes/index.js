@@ -624,8 +624,7 @@ router.get('/signout', function(req, res) {
   router.post('/select',function(req,res) {
     if(!req.body.username) return res.send("username undefined!");
      User.findOne({username:req.body.username},function(err, user){
-      var rest = req.body.restaurant;
-      if(! rest) {
+      if(!req.body.restaurantId) {
         return res.send('restaurant undefined');
       }
         if(user === null) {
@@ -643,12 +642,16 @@ router.get('/signout', function(req, res) {
         //   temp.push(getCateMap[rest.categories[iter][0].replace(/\s/g,'_')]);
         // }
         // rest.categories = temp;
-        Restaurant.findOneAndUpdate({id : rest.id}, rest,{upsert:true}, function(err, r){
+        Restaurant.findOne({id : req.body.restaurantId}, function(err, r){
           if(err) return res.send(err);
+          if(!r) return res.send("restaurant not found!");
           else {
             user.history.push({
-              restaurant:r._id,
-              like:req.body.like
+              restaurant : r._id,
+              like : req.body.like,
+              rating : req.body.rating,
+              date : req.body.date,
+              location : req.body.location
             });
             user.save(function(err) {
               if (err) return res.send(err);
@@ -656,6 +659,17 @@ router.get('/signout', function(req, res) {
             });
           }
         });
+        // user.history.push({
+        //     restaurant : req.body.restaurantId,
+        //     like : req.body.like,
+        //     rating : req.body.rating,
+        //     date : req.body.date,
+        //     location : req.body.location
+        // });
+        // user.save(function(err){
+        //   if(err) return res.send(err);
+        //   res.send("user saved");
+        // });
      })
   });
 
