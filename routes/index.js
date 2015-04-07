@@ -405,7 +405,7 @@ function getScore(rest,preference,comment_avg,avgUserPrice,radius,currentTime) {
     time:30
   }
   
-  var rating_score = (rest.rating - 2) * base.rating /3;
+  var rating_score = (rest.rating - 2) * base.rating /6;
   var max_cuisine_score = Number.NEGATIVE_INFINITY;
   var max_time_score = Number.NEGATIVE_INFINITY;
   var price_score;
@@ -467,7 +467,11 @@ function getScore(rest,preference,comment_avg,avgUserPrice,radius,currentTime) {
   var price_socre;
   var distance_score = (Math.exp(1-parseInt(rest.location.distance)/radius))* base.distance/2.718
   var comment_score = (rest.stats.checkinsCount > comment_avg ? Math.log(rest.stats.checkinsCount) / Math.log(comment_avg) : rest.stats.checkinsCount/comment_avg) * base["comments"];
-  price_score = parseInt(rest.price.tier) < avgUserPrice ? base.price : base.price/(1 + (parseInt(rest.price.tier) - avgUserPrice) * 2 );
+  if(!rest.price) {
+    price_score = 0;
+  } else {
+    price_score = parseInt(rest.price.tier) < avgUserPrice ? base.price : base.price/(1 + (parseInt(rest.price.tier) - avgUserPrice) * 2 );
+  }
   //console.log(rest.id, parseInt(rest.price.tier), avgUserPrice)
   var total_score =  rating_score + cuisine_score + distance_score + comment_score + price_score + time_score;
   return {
@@ -689,7 +693,6 @@ router.post('/search', function(req,res){
         console.log(err);
         return res.status(400).end();
       } else {
-        console.log(data);
         if(!data) res.send(data);
         data = _.map(data,function(d){
           return d.venue;
