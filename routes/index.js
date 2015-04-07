@@ -714,7 +714,7 @@ router.post('/search', function(req,res){
               totalUserPrice += parseInt(price);
             }
             console.log(totalUserPrice)
-            var avgUserPrice = totalUserPrice === 0 ? 3.4 : totalUserPrice/user.history.length ;
+            var avgUserPrice = totalUserPrice === 0 ? 2.2 : totalUserPrice/user.history.length ;
             console.log("average price is " , avgUserPrice);
             var totalComments = 0;
             var open_restaurants = data.filter(function(restaurant){
