@@ -466,7 +466,7 @@ function getScore(rest,preference,comment_avg,avgUserPrice,radius,currentTime) {
   
   var price_socre;
   var distance_score = (Math.exp(1-parseInt(rest.location.distance)/radius))* base.distance/2.718
-  var comment_score = (rest.stats.checkinsCount > comment_avg ? Math.log(rest.stats.checkinsCount) / Math.log(comment_avg) : rest.stats.checkinsCount/comment_avg) * base["comments"];
+  var comment_score = (rest.ratingSignals > comment_avg ? Math.log(rest.ratingSignals) / Math.log(comment_avg) : rest.ratingSignals/comment_avg) * base["comments"];
   if(!rest.price) {
     price_score = 0;
   } else {
@@ -673,6 +673,26 @@ router.get('/signout', function(req, res) {
      })
   });
 
+ router.put('/restaurant/:id', function(req,res){
+   if(!req.params.id) return res.send("no restaurant id is found");
+   if(!req.body.img_url || !req.body.img_url.length) return res.send("no restaurant image url is found");
+    Restaurant.findOne({id : req.params.id}, function(err, r){
+        if(err) return res.send(err);
+        if(!r) return res.send("no restaurant found");
+        out:
+        for(var i =0 ; i < req.body.img_url.length ; i++) {
+          for(var j = 0 ; j < r.food_image_url.length ;j++) {
+            if(req.body.img_url[i] === r.food_image_url[j]) continue out;
+          }
+          r.food_image_url.push(req.body.img_url[i]);
+        }
+        r.save(function(err){
+           if(err) return res.send(err);
+           res.send(r);
+        });
+    });
+ });
+
 
  router.get('/user/:name', function(req,res) {
   if(!req.params.name) return res.send("no username is found");
@@ -737,7 +757,7 @@ router.post('/search', function(req,res){
                   var photoItem = restaurant.photos.groups[0].items[0];
                   restaurant.food_image_url = [photoItem.prefix + photoItem.width + 'x' + photoItem.height + photoItem.suffix];
                   if(restaurant.hours.isOpen) {
-                        totalComments += restaurant.stats.checkinsCount;
+                        totalComments += restaurant.ratingSignals;
                   }
               } catch(e){
                     console.log(e.stack);
