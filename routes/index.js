@@ -405,7 +405,7 @@ function getScore(rest,preference,comment_avg,avgUserPrice,radius,currentTime) {
     time:30
   }
   
-  var rating_score = (rest.rating - 2) * base.rating /6;
+  var rating_score = rest.rating ? (rest.rating - 2) * base.rating /6 : 0;
   var max_cuisine_score = Number.NEGATIVE_INFINITY;
   var max_time_score = Number.NEGATIVE_INFINITY;
   var price_score;
@@ -466,7 +466,7 @@ function getScore(rest,preference,comment_avg,avgUserPrice,radius,currentTime) {
   
   var price_socre;
   var distance_score = (Math.exp(1-parseInt(rest.location.distance)/radius))* base.distance/2.718
-  var comment_score = (rest.ratingSignals > comment_avg ? Math.log(rest.ratingSignals) / Math.log(comment_avg) : rest.ratingSignals/comment_avg) * base["comments"];
+  var comment_score = rest.ratingSignals ? (rest.ratingSignals > comment_avg ? Math.log(rest.ratingSignals) / Math.log(comment_avg) : rest.ratingSignals/comment_avg) * base["comments"] : 0;
   if(!rest.price) {
     price_score = 0;
   } else {
@@ -672,6 +672,7 @@ router.get('/signout', function(req, res) {
         // });
      })
   });
+ 
 
  router.put('/restaurant/:id', function(req,res){
    if(!req.params.id) return res.send("no restaurant id is found");
@@ -715,14 +716,17 @@ router.get('/signout', function(req, res) {
     }
    });
  });
+ router.get('/test', function(req,res){
+   console.log(moment(req.query.time).format("HH"))
+ })
 
-router.post('/search', function(req,res){
-    if(!req.body.username) return res.send("no username found in the request body");
-    if(!req.body.latitude) return res.send("no latitude found in the request body");
-    if(!req.body.longitude) return res.send("no longitude found in the request body");
-    var currentTime = req.body.time;
+router.get('/search', function(req,res){
+    if(!req.query.username) return res.send("no username found in the request query");
+    if(!req.query.latitude) return res.send("no latitude found in the request query");
+    if(!req.query.longitude) return res.send("no longitude found in the request query");
+    var currentTime = req.query.time;
 
-    foursquare(req.body.latitude, req.body.longitude,req.body.radius, function(err,data){
+    foursquare(req.query.latitude, req.query.longitude,req.query.radius, function(err,data){
       if(err) {
         console.log(err);
         return res.status(400).end();
@@ -731,11 +735,11 @@ router.post('/search', function(req,res){
         data = _.map(data,function(d){
           return d.venue;
         })
-        User.findOne({username:req.body.username}).populate('history.restaurant').exec(function(err,user){
+        User.findOne({username:req.query.username}).populate('history.restaurant').exec(function(err,user){
           if(user === null) {
              console.log("no user is find in the databse, will create a new one");
              var user   = new User();
-             user.username    = req.body.username;
+             user.username    = req.query.username;
           }
           var preference;
           try{
@@ -765,7 +769,7 @@ router.post('/search', function(req,res){
               if(restaurant.hours) return restaurant.hours.isOpen;
             });
             open_restaurants.forEach(function(restaurant){
-             restaurant.score = getScore(restaurant,preference,totalComments/open_restaurants.length,avgUserPrice,req.body.radius || 500,currentTime);
+             restaurant.score = getScore(restaurant,preference,totalComments/open_restaurants.length,avgUserPrice,req.query.radius || 500,currentTime);
             });
             var sorted_results = _.sortBy(open_restaurants,function(rest){
                 return 0-rest.score.total_score;
@@ -800,7 +804,7 @@ router.post('/search', function(req,res){
 
 /* GET home page. */
 // router.post('/search', function(req, res) {
-//   if(!req.body.username) return res.send("no username found in the request body");
+//   if(!req.query.username) return res.send("no username found in the request body");
 //   var radius = req.body.radius || String(500);
 //   var currentTime = req.body.time;
 //   console.log("radius is :" + radius , "currentTime is :"  + req.body.time)
