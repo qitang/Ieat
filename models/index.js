@@ -50,6 +50,8 @@ var Schema = mongoose.Schema;
 // });
 
 var restaurantSchema = new Schema({
+  url: String,
+  vendorUrl : String,
   price:{
     tier : Number,
     message : String,

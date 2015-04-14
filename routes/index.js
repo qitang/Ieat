@@ -42,7 +42,7 @@ var foursquare = function(latitude, longitude,radius, callback) {
   var radiusString = '';
   if(radius) radiusString = "&radius=" + radius;
   request({
-      url : "https://api.foursquare.com/v2/venues/explore?ll=" + latitude + "," + longitude + radiusString +  "&client_id=ORSKR0AIZN0RB03PAPWN1LUVE3NMAOW44DE4BELTI0HLH2WK&client_secret=CHHO2A1PUGSOVWRW3YPCBKPP04NACBTDXVHM0W45XAMVT0AW&v=20140806&query=food&venuePhotos=1",
+      url : "https://api.foursquare.com/v2/venues/explore?ll=" + latitude + "," + longitude + radiusString +  "&client_id=ORSKR0AIZN0RB03PAPWN1LUVE3NMAOW44DE4BELTI0HLH2WK&client_secret=CHHO2A1PUGSOVWRW3YPCBKPP04NACBTDXVHM0W45XAMVT0AW&v=20140806&query=food&venuePhotos=1&openNow=1",
       json : true
     },function(err, response, body){
         //console.log(body.response)
@@ -420,8 +420,8 @@ function getScore(rest,preference,comment_avg,avgUserPrice,radius,currentTime) {
   try {
      for(var iter in rest.categories) {
       // console.log(rest.categories[iter])
-       if(typeof data.dic[getCateMap[rest.categories[iter].id]] === 'undefined') {
-        console.log("undefine categories" + getCateMap[rest.categories[iter].id]);
+       if(typeof getCateMap[rest.categories[iter].id] === 'undefined') {
+          console.log("undefine categories" + getCateMap[rest.categories[iter].id]);
           max_time_score =  Math.max(max_time_score, parseInt(getTimeMap['Others'][time_zone[currentHour]].slice(0,-1)));
           continue;
        }
@@ -732,7 +732,8 @@ router.get('/search', function(req,res){
         return res.status(400).end();
       } else {
         if(!data) res.send(data);
-        data = _.map(data,function(d){
+        restaurants = _.map(data,function(d){
+          d.venue.vendorUrl = d.tips[0].canonicalUrl;
           return d.venue;
         })
         User.findOne({username:req.query.username}).populate('history.restaurant').exec(function(err,user){
@@ -752,29 +753,29 @@ router.get('/search', function(req,res){
               totalUserPrice += parseInt(price);
             }
             console.log(totalUserPrice)
-            var avgUserPrice = totalUserPrice === 0 ? 2.2 : totalUserPrice/user.history.length ;
+            var avgUserPrice = totalUserPrice === 0 ? 2.5 : totalUserPrice/user.history.length ;
             console.log("average price is " , avgUserPrice);
             var totalComments = 0;
-            var open_restaurants = data.filter(function(restaurant){
+            restaurants.forEach(function(restaurant){
               try{
-                  if(!restaurant.hours) return false;
+                  //if(!restaurant.hours) return false;
                   var photoItem = restaurant.photos.groups[0].items[0];
                   restaurant.food_image_url = [photoItem.prefix + photoItem.width + 'x' + photoItem.height + photoItem.suffix];
-                  if(restaurant.hours.isOpen) {
-                        totalComments += restaurant.ratingSignals;
-                  }
+                  //if(restaurant.hours.isOpen) {
+                  totalComments += restaurant.ratingSignals;
+                  //}
               } catch(e){
                     console.log(e.stack);
               }
-              if(restaurant.hours) return restaurant.hours.isOpen;
+              //if(restaurant.hours) return restaurant.hours.isOpen;
             });
-            open_restaurants.forEach(function(restaurant){
-             restaurant.score = getScore(restaurant,preference,totalComments/open_restaurants.length,avgUserPrice,req.query.radius || 500,currentTime);
+            restaurants.forEach(function(restaurant){
+             restaurant.score = getScore(restaurant,preference,totalComments/restaurants.length,avgUserPrice,req.query.radius || 500,currentTime);
             });
-            var sorted_results = _.sortBy(open_restaurants,function(rest){
+            var sorted_results = _.sortBy(restaurants,function(rest){
                 return 0-rest.score.total_score;
             });
-            async.each(data,function(doc,callback){
+            async.each(restaurants,function(doc,callback){
                 Restaurant.findOne({id : doc.id},function(err,restaurant){
                   if(err) return callback(err);
                   if(restaurant) return callback(null);
@@ -811,7 +812,7 @@ router.get('/search', function(req,res){
 //   User.findOne({username:req.body.username}).populate('history.restaurants').exec(function(err,user){
 
 //   if(user === null) {
-//      console.log("no user is find in the databse, will create a new one");
+//      console.log("no user is find in the restaurantsbse, will create a new one");
 //      var user   = new User();
 //      user.username    = req.body.username;
 //   }
