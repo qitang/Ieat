@@ -104,7 +104,8 @@ var userSchema = new Schema({
     rating : Number,
     location :{
       latitude : Number,
-      longitude : Number
+      longitude : Number,
+      distance : Number
     },
     date : {type: Date, default: Date.now}
    }]
