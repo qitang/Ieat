@@ -406,7 +406,7 @@ function getScore(rest,preference,comment_avg,avgUserPrice,radius,currentTime) {
     time:30
   }
   
-  var rating_score = rest.rating ? (rest.rating - 2) * base.rating /6 : 0;
+  var rating_score = rest.rating ? (rest.rating/2 - 2) * base.rating /6 : 0;
   var max_cuisine_score = Number.NEGATIVE_INFINITY;
   var max_time_score = Number.NEGATIVE_INFINITY;
   var price_score;
@@ -654,9 +654,9 @@ router.get('/signout', function(req, res) {
               date : req.body.date,
               location : req.body.location
             });
-            user.save(function(err) {
+            user.save(function(err,user) {
               if (err) return res.send(err);
-              res.send("user saved");
+              res.send(user);
             });
           }
         });
@@ -760,8 +760,10 @@ router.get('/search', function(req,res){
             restaurants.forEach(function(restaurant){
               try{
                   //if(!restaurant.hours) return false;
-                  var photoItem = restaurant.photos.groups[0].items[0];
-                  restaurant.food_image_url = [photoItem.prefix + photoItem.width + 'x' + photoItem.height + photoItem.suffix];
+                  if(restaurant.photos.groups && restaurant.photos.groups.length > 0) {
+                    var photoItem = restaurant.photos.groups[0].items[0];
+                    restaurant.food_image_url = [photoItem.prefix + photoItem.width + 'x' + photoItem.height + photoItem.suffix];
+                  }
                   //if(restaurant.hours.isOpen) {
                   totalComments += restaurant.ratingSignals;
                   //}
