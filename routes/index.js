@@ -768,9 +768,9 @@ router.get('/search', function(req,res){
                     var photoItem = restaurant.photos.groups[0].items[0];
                     restaurant.food_image_url = [photoItem.prefix + photoItem.width + 'x' + photoItem.height + photoItem.suffix];
                   }
-                  //if(restaurant.hours.isOpen) {
-                  totalComments += restaurant.ratingSignals;
-                  //}
+                  if(restaurant.ratingSignals) {
+                    totalComments += restaurant.ratingSignals;
+                  }
               } catch(e){
                     console.log(e.stack);
               }
