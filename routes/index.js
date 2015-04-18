@@ -42,12 +42,12 @@ var foursquare = function(latitude, longitude,radius, callback) {
   var radiusString = '';
   if(radius) radiusString = "&radius=" + radius;
   request({
-      url : "https://api.foursquare.com/v2/venues/explore?ll=" + latitude + "," + longitude + radiusString +  "&client_id=ORSKR0AIZN0RB03PAPWN1LUVE3NMAOW44DE4BELTI0HLH2WK&client_secret=CHHO2A1PUGSOVWRW3YPCBKPP04NACBTDXVHM0W45XAMVT0AW&v=20140806&query=food&venuePhotos=1&openNow=1",
+      url : "https://api.foursquare.com/v2/venues/explore?ll=" + latitude + "," + longitude + radiusString +  "&client_id=ORSKR0AIZN0RB03PAPWN1LUVE3NMAOW44DE4BELTI0HLH2WK&client_secret=CHHO2A1PUGSOVWRW3YPCBKPP04NACBTDXVHM0W45XAMVT0AW&v=20150406&query=food&venuePhotos=1&openNow=1",
       json : true
     },function(err, response, body, suggestedRadius){
         //console.log(body.response)
         try {
-           callback(err,body.response.groups[0].items,body.response.suggestedRadius);
+          callback(err,body.response.groups[0].items,body.response.suggestedRadius);
          } catch(e) {
           console.log(e.stack)
           callback(e,null);
@@ -706,10 +706,14 @@ router.get('/signout', function(req, res) {
     else {
       try{
         var preference = getPreference(user);
-
+        var preObj = {};
+        _.each(data.dic, function(value, key) {
+            preObj[key] = preference[value]
+        });
+        //console.log(preObj);
         res.send({
           user : user,
-          preference : preference
+          preference : preObj
         })
       } catch(err) {
         return res.send(err.stack)
