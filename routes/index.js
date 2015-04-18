@@ -623,10 +623,10 @@ router.get('/signout', function(req, res) {
   }));
 
   router.post('/select',function(req,res) {
-    if(!req.body.username) return res.send("username undefined!");
+    if(!req.body.username) return res.status(400).send("username undefined!");
      User.findOne({username:req.body.username},function(err, user){
       if(!req.body.restaurantId) {
-        return res.send('restaurant undefined');
+        return res.status(400).send('restaurant undefined');
       }
         if(user === null) {
            var user   = new User();
@@ -644,8 +644,8 @@ router.get('/signout', function(req, res) {
         // }
         // rest.categories = temp;
         Restaurant.findOne({id : req.body.restaurantId}, function(err, r){
-          if(err) return res.send(err);
-          if(!r) return res.send("restaurant not found!");
+          if(err) return res.status(400).send(err);
+          if(!r) return res.status(400).send("restaurant not found!");
           else {
             user.history.push({
               restaurant : r._id,
@@ -655,7 +655,7 @@ router.get('/signout', function(req, res) {
               location : req.body.location
             });
             user.save(function(err,user) {
-              if (err) return res.send(err);
+              if (err) return res.status(400).send(err);
               res.send(user);
             });
           }
@@ -668,7 +668,7 @@ router.get('/signout', function(req, res) {
         //     location : req.body.location
         // });
         // user.save(function(err){
-        //   if(err) return res.send(err);
+        //   if(err) return res.status(400).send(err);
         //   res.send("user saved");
         // });
      })
@@ -676,11 +676,11 @@ router.get('/signout', function(req, res) {
  
 
  router.put('/restaurant/:id', function(req,res){
-   if(!req.params.id) return res.send("no restaurant id is found");
-   if(!req.body.img_url || !req.body.img_url.length) return res.send("no restaurant image url is found");
+   if(!req.params.id) return res.status(400).send("no restaurant id is found");
+   if(!req.body.img_url || !req.body.img_url.length) return res.status(400).send("no restaurant image url is found");
     Restaurant.findOne({id : req.params.id}, function(err, r){
-        if(err) return res.send(err);
-        if(!r) return res.send("no restaurant found");
+        if(err) return res.status(400).send(err);
+        if(!r) return res.status(400).send("no restaurant found");
         out:
         for(var i =0 ; i < req.body.img_url.length ; i++) {
           for(var j = 0 ; j < r.food_image_url.length ;j++) {
@@ -689,7 +689,7 @@ router.get('/signout', function(req, res) {
           r.food_image_url.push(req.body.img_url[i]);
         }
         r.save(function(err){
-           if(err) return res.send(err);
+           if(err) return res.status(400).send(err);
            res.send(r);
         });
     });
@@ -697,12 +697,12 @@ router.get('/signout', function(req, res) {
 
 
  router.get('/user/:name', function(req,res) {
-  if(!req.params.name) return res.send("no username is found");
+  if(!req.params.name) return res.status(400).send("no username is found");
    User.findOne({username : req.params.name}).populate('history.restaurant').exec(function(err,user){
     console.log(user)
 
-    if(err) res.send(err);
-    if(!user) res.send('user not exist');
+    if(err) res.status(400).send(err);
+    if(!user) res.status(400).send('user not exist');
     else {
       try{
         var preference = getPreference(user);
@@ -716,7 +716,7 @@ router.get('/signout', function(req, res) {
           preference : preObj
         })
       } catch(err) {
-        return res.send(err.stack)
+        return res.status(400).send(err.stack)
       }
     }
    });
@@ -726,9 +726,9 @@ router.get('/signout', function(req, res) {
  })
 
 router.get('/search', function(req,res){
-    if(!req.query.username) return res.send("no username found in the request query");
-    if(!req.query.latitude) return res.send("no latitude found in the request query");
-    if(!req.query.longitude) return res.send("no longitude found in the request query");
+    if(!req.query.username) return res.status(400).send("no username found in the request query");
+    if(!req.query.latitude) return res.status(400).send("no latitude found in the request query");
+    if(!req.query.longitude) return res.status(400).send("no longitude found in the request query");
     var currentTime = req.query.time;
 
     foursquare(req.query.latitude, req.query.longitude,req.query.radius, function(err,data, suggestedRadius){
@@ -744,8 +744,8 @@ router.get('/search', function(req,res){
         User.findOne({username:req.query.username}).populate('history.restaurant').exec(function(err,user){
           if(user === null) {
              console.log("no user is find in the databse, will create a new one");
-             var user   = new User();
-             user.username    = req.query.username;
+             var user = new User();
+             user.username = req.query.username;
           }
           var preference;
           try{
@@ -794,16 +794,16 @@ router.get('/search', function(req,res){
             },function(err){
               if(err) {
                 console.log(err);
-                res.send([]);
+                res.status(400).send([]);
               } else {
                 user.save(function (err) {
-                  if(err) res.send(err);
+                  if(err) res.status(400).send(err);
                   else res.send(sorted_results);
                 });
               }
             });
           } catch(error) {
-            return res.send(error.stack)
+            return res.status(400).send(error.stack)
           }
         });
       }
@@ -860,11 +860,11 @@ router.get('/search', function(req,res){
 //         });
 //       }
 //     ],function(err){
-//       if(err) return res.send(err);
+//       if(err) return res.status(400).send(err);
 //       var all_results = _.union(first,second);
 //       try{
 //         processResult(all_results,currentTime,function(err,rests,total_obj){
-//            if(err) return res.send(err);
+//            if(err) return res.status(400).send(err);
 //            // rests.forEach(function(d){
               
 //            // });
@@ -877,7 +877,7 @@ router.get('/search', function(req,res){
 //                return 0-rest.score.total_score;
 //            });
 //            user.save(function (err) {
-//              if(err) res.send(err);
+//              if(err) res.status(400).send(err);
 //              else res.send(sorted_results);
 //            });
 //          })
