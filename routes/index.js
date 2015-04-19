@@ -43,7 +43,8 @@ var foursquare = function(latitude, longitude,radius, callback) {
   if(radius) radiusString = "&radius=" + radius;
   request({
       url : "https://api.foursquare.com/v2/venues/explore?ll=" + latitude + "," + longitude + radiusString +  "&client_id=ORSKR0AIZN0RB03PAPWN1LUVE3NMAOW44DE4BELTI0HLH2WK&client_secret=CHHO2A1PUGSOVWRW3YPCBKPP04NACBTDXVHM0W45XAMVT0AW&v=20150406&query=food&venuePhotos=1&openNow=1",
-      json : true
+      json : true,
+      timeout : 50000
     },function(err, response, body, suggestedRadius){
         //console.log(body.response)
         try {
@@ -594,6 +595,18 @@ function getScore(rest,preference,comment_avg,avgUserPrice,radius,currentTime) {
     res.render('home', { message: req.flash('message') });
   });
 
+  router.delete('/user/:name/restaurant/:id', function(){
+    User.findOne({username : req.params.name}, function(err, user){
+      if(err) res.status(400).send(err);
+      var index = _.indexOf(user.history.restaurant,req.params.id);
+      if(index === -1) res.status(400).send("no restaurant id found");
+      user.splice(indxe,1);
+      user.save(function(err){
+        if(err) res.status(400).end();
+        res.send(user);
+      });
+    })
+  });
   // /* Handle Login POST */
   // router.post('/login', passport.authenticate('local-login', {
   //   failureRedirect: '/',
@@ -643,7 +656,7 @@ router.get('/signout', function(req, res) {
         //   temp.push(getCateMap[rest.categories[iter][0].replace(/\s/g,'_')]);
         // }
         // rest.categories = temp;
-        Restaurant.findOne({id : req.body.restaurantId}, function(err, r){
+        Restaurant.findOne({_id : req.body.restaurantId}, function(err, r){
           if(err) return res.status(400).send(err);
           if(!r) return res.status(400).send("restaurant not found!");
           else {
@@ -678,7 +691,7 @@ router.get('/signout', function(req, res) {
  router.put('/restaurant/:id', function(req,res){
    if(!req.params.id) return res.status(400).send("no restaurant id is found");
    if(!req.body.img_url || !req.body.img_url.length) return res.status(400).send("no restaurant image url is found");
-    Restaurant.findOne({id : req.params.id}, function(err, r){
+    Restaurant.findOne({_id : req.params.id}, function(err, r){
         if(err) return res.status(400).send(err);
         if(!r) return res.status(400).send("no restaurant found");
         out:
@@ -785,9 +798,13 @@ router.get('/search', function(req,res){
             async.each(restaurants,function(doc,callback){
                 Restaurant.findOne({id : doc.id},function(err,restaurant){
                   if(err) return callback(err);
-                  if(restaurant) return callback(null);
+                  if(restaurant) {
+                    doc._id = restaurant._id;
+                    return callback(null);
+                  }
                   Restaurant.create(doc, function(err, newDoc){
                     if(err) return callback(err);
+                    doc._id = restaurant._id;
                     return callback(null);
                   })
                 });
