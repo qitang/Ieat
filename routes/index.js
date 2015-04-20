@@ -804,7 +804,7 @@ router.get('/search', function(req,res){
                   }
                   Restaurant.create(doc, function(err, newDoc){
                     if(err) return callback(err);
-                    doc._id = restaurant._id;
+                    doc._id = newDoc._id;
                     return callback(null);
                   })
                 });
