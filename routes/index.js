@@ -599,15 +599,14 @@ function getScore(rest,preference,comment_avg,avgUserPrice,radius,currentTime) {
   router.put("/user/:name/history/:id", function(req, res){
     if(!req.params.id) return res.status(400).send("history id undefined!");
     if(!req.params.name) return res.status(400).send("user name undefined!");
-    if(!req.body.rating) return res.status(400).send("no rating found");
+    if(!req.body.like) return res.status(400).send("no like found");
     User.findOne({username : req.params.name}, function(err, user){
       if(err) return res.status(400).send(err);
       if(!user) return res.status(400).send("no user found");
          History.findOne({_id: req.params.id}, function(err,h){
-          console.log(h)
             if(err) return res.status(400).send(err);
             if(!h) return res.status(400).send("no history found");
-            h.rating = req.body.rating;
+            h.like = req.body.like;
             console.log(h)
             h.save(function(err,h){
               if(err) return res.status(400).send(err);
@@ -695,7 +694,6 @@ router.get('/signout', function(req, res) {
             History.create({
               restaurant : r._id,
               like : req.body.like,
-              rating : req.body.rating,
               date : req.body.date,
               utc_offset : offset,
               location : req.body.location

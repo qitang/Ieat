@@ -94,7 +94,6 @@ var restaurantSchema = new Schema({
 var historySchema = new Schema({
   restaurant : { type: Schema.Types.ObjectId, ref: 'Restaurant' },
   like:Number,
-  rating : Number,
   location :{
     latitude : Number,
     longitude : Number,
