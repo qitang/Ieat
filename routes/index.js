@@ -618,6 +618,7 @@ function getScore(rest,preference,comment_avg,avgUserPrice,radius,currentTime) {
     if(!req.params.id) return res.status(400).send("history id undefined!");
     User.findOne({username : req.params.name}, function(err, user){
       if(err) return res.status(400).send(err);
+      if(!user) return res.status(400).send(err);
       user.all_history.pull(req.params.id)
       user.save(function(err){
         if(err) res.status(400).end();
