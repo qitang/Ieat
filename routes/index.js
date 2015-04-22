@@ -599,17 +599,24 @@ function getScore(rest,preference,comment_avg,avgUserPrice,radius,currentTime) {
   router.put("/user/:name/history/:id", function(req, res){
     if(!req.params.id) return res.status(400).send("history id undefined!");
     if(!req.params.name) return res.status(400).send("user name undefined!");
+    if(!req.body.rating) return res.status(400).send("no rating found");
     User.findOne({username : req.params.name}, function(err, user){
       if(err) return res.status(400).send(err);
       if(!user) return res.status(400).send("no user found");
-      Restaurant.findOne({_id : req.body.restaurantId}, function(err ,restaurant){
-        if(err) return res.status(400).send(err);
-        if(!restaurant) return res.status(400).send("no restaurant found");
-        History.findOneAndUpdate({_id : req.params.id}, req.body,function(err, h){
-         if(err) return res.status(400).send(err);
-         res.status(200).send(h);
-        });
-      })
+         History.findOne({_id: req.params.id}, function(err,h){
+          console.log(h)
+            if(err) return res.status(400).send(err);
+            if(!h) return res.status(400).send("no history found");
+            h.rating = req.body.rating;
+            console.log(h)
+            h.save(function(err,h){
+              if(err) return res.status(400).send(err);
+              h.populate("restaurant",function(err,newH){
+                if(err) return res.status(400).send(err);
+                res.send(newH);
+              });
+            });
+         })
     });
   }); 
    
@@ -697,7 +704,7 @@ router.get('/signout', function(req, res) {
               user.all_history.push(h._id);
               user.save(function(err,user) {
                 if (err) return res.status(400).send(err);
-                res.send(user);
+                res.send(h);
               });
             });
           }
