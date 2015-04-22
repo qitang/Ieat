@@ -16,6 +16,7 @@ var passport = require('passport');
 var models = require('../models/index');
 var User = models.User;
 var Restaurant = models.Restaurant;
+var History = models.History;
 var moment = require('moment');
 var Stats = require('fast-stats').Stats;
 
@@ -359,10 +360,10 @@ function getPreference(user) {
      cuisine_count.push(0);
      sum.push(0);
    }
-   if(user.history.length === 0 ) return sum;
-   for(var rh = 0 ; rh < user.history.length ; rh++) {
-     var arr = user.history[rh].restaurant.categories;
-     console.log("the restaurant is " ,user.history[rh].restaurant);
+   if(user.all_history.length === 0 ) return sum;
+   for(var rh = 0 ; rh < user.all_history.length ; rh++) {
+     var arr = user.all_history[rh].restaurant.categories;
+     console.log("the restaurant is " ,user.all_history[rh].restaurant);
      if(!arr) {
         continue;
      }
@@ -407,7 +408,7 @@ function getScore(rest,preference,comment_avg,avgUserPrice,radius,currentTime) {
     time:30
   }
   
-  var rating_score = rest.rating ? (rest.rating/2 - 2) * base.rating /6 : 0;
+  var rating_score = rest.rating ? (rest.rating - 4) * base.rating /6 : 0;
   var max_cuisine_score = Number.NEGATIVE_INFINITY;
   var max_time_score = Number.NEGATIVE_INFINITY;
   var price_score;
@@ -594,16 +595,33 @@ function getScore(rest,preference,comment_avg,avgUserPrice,radius,currentTime) {
     // Display the Login page with any flash message, if any
     res.render('home', { message: req.flash('message') });
   });
-
-  router.delete('/user/:name/restaurant/:id', function(){
+  
+  router.put("/user/:name/history/:id", function(req, res){
+    if(!req.params.id) return res.status(400).send("history id undefined!");
+    if(!req.params.name) return res.status(400).send("user name undefined!");
     User.findOne({username : req.params.name}, function(err, user){
-      if(err) res.status(400).send(err);
-      var index = _.indexOf(user.history.restaurant,req.params.id);
-      if(index === -1) res.status(400).send("no restaurant id found");
-      user.splice(indxe,1);
+      if(err) return res.status(400).send(err);
+      if(!user) return res.status(400).send("no user found");
+      Restaurant.findOne({_id : req.body.restaurantId}, function(err ,restaurant){
+        if(err) return res.status(400).send(err);
+        if(!restaurant) return res.status(400).send("no restaurant found");
+        History.findOneAndUpdate({_id : req.params.id}, req.body,function(err, h){
+         if(err) return res.status(400).send(err);
+         res.status(200).send(h);
+        });
+      })
+    });
+  }); 
+   
+  router.delete('/user/:name/history/:id', function(req, res){
+    if(!req.params.name) return res.status(400).send("username undefined!");
+    if(!req.params.id) return res.status(400).send("history id undefined!");
+    User.findOne({username : req.params.name}, function(err, user){
+      if(err) return res.status(400).send(err);
+      user.all_history.pull(req.params.id)
       user.save(function(err){
         if(err) res.status(400).end();
-        res.send(user);
+        else res.send(user);
       });
     })
   });
@@ -660,16 +678,26 @@ router.get('/signout', function(req, res) {
           if(err) return res.status(400).send(err);
           if(!r) return res.status(400).send("restaurant not found!");
           else {
-            user.history.push({
+            try{
+              var offset = moment.parseZone(req.body.date).format("Z");
+            } catch(e){
+              console.log(e.stack);
+              offset = "";
+            }
+            History.create({
               restaurant : r._id,
               like : req.body.like,
               rating : req.body.rating,
               date : req.body.date,
+              utc_offset : offset,
               location : req.body.location
-            });
-            user.save(function(err,user) {
+            },function(err,h){
               if (err) return res.status(400).send(err);
-              res.send(user);
+              user.all_history.push(h._id);
+              user.save(function(err,user) {
+                if (err) return res.status(400).send(err);
+                res.send(user);
+              });
             });
           }
         });
@@ -711,26 +739,26 @@ router.get('/signout', function(req, res) {
 
  router.get('/user/:name', function(req,res) {
   if(!req.params.name) return res.status(400).send("no username is found");
-   User.findOne({username : req.params.name}).populate('history.restaurant').exec(function(err,user){
-    console.log(user)
-
+   User.findOne({username : req.params.name}).populate('all_history').exec(function(err,user){
     if(err) res.status(400).send(err);
     if(!user) res.status(400).send('user not exist');
     else {
-      try{
-        var preference = getPreference(user);
-        var preObj = {};
-        _.each(data.dic, function(value, key) {
-            preObj[key] = preference[value]
-        });
-        //console.log(preObj);
-        res.send({
-          user : user,
-          preference : preObj
-        })
-      } catch(err) {
-        return res.status(400).send(err.stack)
-      }
+      Restaurant.populate(user.all_history,{path:"restaurant"},function(err,results){
+        try{
+          var preference = getPreference(user);
+          var preObj = {};
+          _.each(data.dic, function(value, key) {
+              preObj[key] = preference[value]
+          });
+          //console.log(preObj);
+          res.send({
+            user : user,
+            preference : preObj
+          })
+        } catch(err) {
+          return res.status(400).send(err.stack)
+        }
+      });
     }
    });
  });
@@ -754,74 +782,76 @@ router.get('/search', function(req,res){
           if(d.tips && d.tips[0]) d.venue.vendorUrl = d.tips[0].canonicalUrl;
           return d.venue;
         })
-        User.findOne({username:req.query.username}).populate('history.restaurant').exec(function(err,user){
+        User.findOne({username:req.query.username}).populate('all_history').exec(function(err,user){
           if(user === null) {
              console.log("no user is find in the databse, will create a new one");
              var user = new User();
              user.username = req.query.username;
           }
-          var preference;
-          try{
-            preference = getPreference(user);
-            console.log("preference is " , preference);
-            var totalUserPrice = 0;
-            console.log(user)
-            for(var i =0 ; i < user.history.length ; i++) {
-              var price = user.history[i].restaurant.price.tier || 0;
-              totalUserPrice += parseInt(price);
-            }
-            console.log(totalUserPrice)
-            var avgUserPrice = totalUserPrice === 0 ? 2.5 : totalUserPrice/user.history.length ;
-            console.log("average price is " , avgUserPrice);
-            var totalComments = 0;
-            restaurants.forEach(function(restaurant){
-              try{
-                  //if(!restaurant.hours) return false;
-                  if(restaurant.photos.groups && restaurant.photos.groups.length > 0) {
-                    var photoItem = restaurant.photos.groups[0].items[0];
-                    restaurant.food_image_url = [photoItem.prefix + photoItem.width + 'x' + photoItem.height + photoItem.suffix];
-                  }
-                  if(restaurant.ratingSignals) {
-                    totalComments += restaurant.ratingSignals;
-                  }
-              } catch(e){
-                    console.log(e.stack);
+          Restaurant.populate(user.all_history,{path:"restaurant"},function(err,results){
+            var preference;
+            try{
+              preference = getPreference(user);
+              console.log("preference is " , preference);
+              var totalUserPrice = 0;
+              console.log(user)
+              for(var i =0 ; i < user.all_history.length ; i++) {
+                var price = user.all_history[i].restaurant.price.tier || 0;
+                totalUserPrice += parseInt(price);
               }
-              //if(restaurant.hours) return restaurant.hours.isOpen;
-            });
-            restaurants.forEach(function(restaurant){
-             restaurant.score = getScore(restaurant,preference,totalComments/restaurants.length,avgUserPrice,req.query.radius || suggestedRadius,currentTime);
-            });
-            var sorted_results = _.sortBy(restaurants,function(rest){
-                return 0-rest.score.total_score;
-            });
-            async.each(restaurants,function(doc,callback){
-                Restaurant.findOne({id : doc.id},function(err,restaurant){
-                  if(err) return callback(err);
-                  if(restaurant) {
-                    doc._id = restaurant._id;
-                    return callback(null);
-                  }
-                  Restaurant.create(doc, function(err, newDoc){
+              console.log(totalUserPrice)
+              var avgUserPrice = totalUserPrice === 0 ? 2.5 : totalUserPrice/user.all_history.length ;
+              console.log("average price is " , avgUserPrice);
+              var totalComments = 0;
+              restaurants.forEach(function(restaurant){
+                try{
+                    //if(!restaurant.hours) return false;
+                    if(restaurant.photos.groups && restaurant.photos.groups.length > 0) {
+                      var photoItem = restaurant.photos.groups[0].items[0];
+                      restaurant.food_image_url = [photoItem.prefix + photoItem.width + 'x' + photoItem.height + photoItem.suffix];
+                    }
+                    if(restaurant.ratingSignals) {
+                      totalComments += restaurant.ratingSignals;
+                    }
+                } catch(e){
+                      console.log(e.stack);
+                }
+                //if(restaurant.hours) return restaurant.hours.isOpen;
+              });
+              restaurants.forEach(function(restaurant){
+               restaurant.score = getScore(restaurant,preference,totalComments/restaurants.length,avgUserPrice,req.query.radius || suggestedRadius,currentTime);
+              });
+              var sorted_results = _.sortBy(restaurants,function(rest){
+                  return 0-rest.score.total_score;
+              });
+              async.each(restaurants,function(doc,callback){
+                  Restaurant.findOne({id : doc.id},function(err,restaurant){
                     if(err) return callback(err);
-                    doc._id = restaurant._id;
-                    return callback(null);
-                  })
-                });
-            },function(err){
-              if(err) {
-                console.log(err);
-                res.status(400).send([]);
-              } else {
-                user.save(function (err) {
-                  if(err) res.status(400).send(err);
-                  else res.send(sorted_results);
-                });
-              }
-            });
-          } catch(error) {
-            return res.status(400).send(error.stack)
-          }
+                    if(restaurant) {
+                      doc._id = restaurant._id;
+                      return callback(null);
+                    }
+                    Restaurant.create(doc, function(err, newDoc){
+                      if(err) return callback(err);
+                      doc._id = newDoc._id;
+                      return callback(null);
+                    })
+                  });
+              },function(err){
+                if(err) {
+                  console.log(err);
+                  res.status(400).send([]);
+                } else {
+                  user.save(function (err) {
+                    if(err) res.status(400).send(err);
+                    else res.send(sorted_results);
+                  });
+                }
+              });
+            } catch(error) {
+              return res.status(400).send(error.stack)
+            }
+          });
         });
       }
     });

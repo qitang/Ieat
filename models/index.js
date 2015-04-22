@@ -80,7 +80,8 @@ var restaurantSchema = new Schema({
   categories:[{
     id : String,
     name : String,
-    global : String
+    global : String,
+    shortName : String
   }],
   name:String,
   stats : {
@@ -88,6 +89,19 @@ var restaurantSchema = new Schema({
     usersCount : String,
     tipCount : String
   }
+});
+
+var historySchema = new Schema({
+  restaurant : { type: Schema.Types.ObjectId, ref: 'Restaurant' },
+  like:Number,
+  rating : Number,
+  location :{
+    latitude : Number,
+    longitude : Number,
+    distance : Number
+  },
+  date : {type: Date, default: Date.now},
+  utc_offset :  String 
 });
 
 var userSchema = new Schema({
@@ -98,17 +112,7 @@ var userSchema = new Schema({
    address:String,
    title:String,
    ave_price: Number,
-   history:[{
-    restaurant : { type: Schema.Types.ObjectId, ref: 'Restaurant' },
-    like:Number,
-    rating : Number,
-    location :{
-      latitude : Number,
-      longitude : Number,
-      distance : Number
-    },
-    date : {type: Date, default: Date.now}
-   }]
+   all_history:[{ type: Schema.Types.ObjectId, ref: 'History' },]
 });
 
 //methods =====
@@ -161,6 +165,7 @@ restaurantSchema.methods.isOpen = function(now) {
 
 User = mongoose.model('User', userSchema);
 Restaurant = mongoose.model('Restaurant',restaurantSchema);
+History = mongoose.model('History',historySchema);
 
-module.exports = {"User": User, "Restaurant": Restaurant};
+module.exports = {"User": User, "Restaurant": Restaurant, "History" : History};
 
