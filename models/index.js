@@ -99,6 +99,7 @@ var historySchema = new Schema({
     longitude : Number,
     distance : Number
   },
+  reviewed : { type: Boolean, default: false },
   date : {type: Date, default: Date.now},
   utc_offset :  String 
 });

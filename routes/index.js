@@ -46,7 +46,7 @@ var foursquare = function(latitude, longitude,radius, callback) {
       url : "https://api.foursquare.com/v2/venues/explore?ll=" + latitude + "," + longitude + radiusString +  "&client_id=ORSKR0AIZN0RB03PAPWN1LUVE3NMAOW44DE4BELTI0HLH2WK&client_secret=CHHO2A1PUGSOVWRW3YPCBKPP04NACBTDXVHM0W45XAMVT0AW&v=20150406&query=food&venuePhotos=1&openNow=1",
       json : true,
       timeout : 50000
-    },function(err, response, body, suggestedRadius){
+    },function(err, response, body){
         //console.log(body.response)
         try {
           callback(err,body.response.groups[0].items,body.response.suggestedRadius);
@@ -393,7 +393,7 @@ function getPreference(user) {
 
 
 
-function getScore(rest,preference,comment_avg,avgUserPrice,radius,currentTime) {
+function getScore(rest,preference,comment_avg,avgUserPrice,avgUserRating,radius,currentTime) {
   var average = {
       rating:0,
       comments:0,
@@ -416,7 +416,7 @@ function getScore(rest,preference,comment_avg,avgUserPrice,radius,currentTime) {
   var time_score;
   var currentHour;
   if(currentTime) {
-    currentHour = parseInt(moment(currentTime).format('HH'));
+    currentHour = parseInt(moment(currentTime,'"YYYY-MM-DDTHH:mm:ss"').format('HH'));
   } else {
     currentHour = parseInt(moment().format('HH'));
   }
@@ -457,6 +457,9 @@ function getScore(rest,preference,comment_avg,avgUserPrice,radius,currentTime) {
   } catch(error) {
      console.log(error.stack);
      return  {
+      avgUserRating : avgUserRating,
+      avgUserPrice : avgUserPrice,
+      local_hour : currentHour,
       rating_score : 0,
       cuisine_score : 0,
       distance_score : 0,
@@ -467,7 +470,7 @@ function getScore(rest,preference,comment_avg,avgUserPrice,radius,currentTime) {
      }
   }
   
-  var price_socre;
+  var price_score;
   var distance_score = (Math.exp(1-parseInt(rest.location.distance)/radius))* base.distance/2.718
   var comment_score = rest.ratingSignals ? (rest.ratingSignals > comment_avg ? Math.log(rest.ratingSignals) / Math.log(comment_avg) : rest.ratingSignals/comment_avg) * base["comments"] : 0;
   if(!rest.price) {
@@ -478,6 +481,9 @@ function getScore(rest,preference,comment_avg,avgUserPrice,radius,currentTime) {
   //console.log(rest.id, parseInt(rest.price.tier), avgUserPrice)
   var total_score =  rating_score + cuisine_score + distance_score + comment_score + price_score + time_score;
   return {
+    local_hour : currentHour,
+    avgUserRating : avgUserRating,
+    avgUserPrice : avgUserPrice,
     rating_score : rating_score,
     cuisine_score : cuisine_score,
     distance_score : distance_score,
@@ -607,7 +613,7 @@ function getScore(rest,preference,comment_avg,avgUserPrice,radius,currentTime) {
             if(err) return res.status(400).send(err);
             if(!h) return res.status(400).send("no history found");
             h.like = req.body.like;
-            console.log(h)
+            h.reviewed = true;
             h.save(function(err,h){
               if(err) return res.status(400).send(err);
               h.populate("restaurant",function(err,newH){
@@ -784,7 +790,7 @@ router.get('/search', function(req,res){
         return res.status(400).end();
       } else {
         if(!data) res.send(data);
-        restaurants = _.map(data,function(d){
+        var restaurants = _.map(data,function(d){
           if(d.tips && d.tips[0]) d.venue.vendorUrl = d.tips[0].canonicalUrl;
           return d.venue;
         })
@@ -800,13 +806,17 @@ router.get('/search', function(req,res){
               preference = getPreference(user);
               console.log("preference is " , preference);
               var totalUserPrice = 0;
+              var totalRating = 0;
               console.log(user)
               for(var i =0 ; i < user.all_history.length ; i++) {
                 var price = user.all_history[i].restaurant.price.tier || 0;
+                var rating  = user.all_history[i].like || 0;
                 totalUserPrice += parseInt(price);
+                totalRating += parseInt(rating);
               }
-              console.log(totalUserPrice)
+              console.log(totalUserPrice,"---------",totalRating)
               var avgUserPrice = totalUserPrice === 0 ? 2.5 : totalUserPrice/user.all_history.length ;
+              var avgUserRating = totalRating === 0 ? 0 : totalRating/user.all_history.length;
               console.log("average price is " , avgUserPrice);
               var totalComments = 0;
               restaurants.forEach(function(restaurant){
@@ -814,7 +824,7 @@ router.get('/search', function(req,res){
                     //if(!restaurant.hours) return false;
                     if(restaurant.photos.groups && restaurant.photos.groups.length > 0) {
                       var photoItem = restaurant.photos.groups[0].items[0];
-                      restaurant.food_image_url = [photoItem.prefix + photoItem.width + 'x' + photoItem.height + photoItem.suffix];
+                      restaurant.food_image_url = [photoItem.prefix + "original" + photoItem.suffix];
                     }
                     if(restaurant.ratingSignals) {
                       totalComments += restaurant.ratingSignals;
@@ -825,7 +835,7 @@ router.get('/search', function(req,res){
                 //if(restaurant.hours) return restaurant.hours.isOpen;
               });
               restaurants.forEach(function(restaurant){
-               restaurant.score = getScore(restaurant,preference,totalComments/restaurants.length,avgUserPrice,req.query.radius || suggestedRadius,currentTime);
+               restaurant.score = getScore(restaurant,preference,totalComments/restaurants.length,avgUserPrice,avgUserRating,req.query.radius || suggestedRadius,currentTime);
               });
               var sorted_results = _.sortBy(restaurants,function(rest){
                   return 0-rest.score.total_score;
@@ -835,13 +845,24 @@ router.get('/search', function(req,res){
                     if(err) return callback(err);
                     if(restaurant) {
                       doc._id = restaurant._id;
-                      return callback(null);
+                      var price = doc.price || restaurant.price;
+                      doc.price = price;
+                      if(price === restaurant.price) {
+                        return callback(null);
+                      } else {
+                        restaurant.price = price;
+                        restaurant.save(function(err){
+                          if(err) return callback(err);
+                          return callback(null);
+                        });
+                      }
+                    } else {
+                      Restaurant.create(doc, function(err, newDoc){
+                        if(err) return callback(err);
+                        doc._id = newDoc._id;
+                        return callback(null);
+                      })
                     }
-                    Restaurant.create(doc, function(err, newDoc){
-                      if(err) return callback(err);
-                      doc._id = newDoc._id;
-                      return callback(null);
-                    })
                   });
               },function(err){
                 if(err) {
