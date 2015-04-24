@@ -759,11 +759,23 @@ router.get('/signout', function(req, res) {
         try{
           var preference = getPreference(user);
           var preObj = {};
+          var totalUserPrice = 0;
+          var totalRating = 0;
+          for(var i =0 ; i < user.all_history.length ; i++) {
+            var price = user.all_history[i].restaurant.price.tier || 0;
+            var rating  = user.all_history[i].like || 0;
+            totalUserPrice += parseInt(price);
+            totalRating += parseInt(rating);
+          }
+          var avgUserPrice = totalUserPrice === 0 ? 2.5 : totalUserPrice/user.all_history.length ;
+          var avgUserRating = totalRating === 0 ? 0 : totalRating/user.all_history.length;
           _.each(data.dic, function(value, key) {
               preObj[key] = preference[value]
           });
           //console.log(preObj);
           res.send({
+            avgUserPrice : avgUserPrice,
+            totalRating : totalRating,
             user : user,
             preference : preObj
           })
